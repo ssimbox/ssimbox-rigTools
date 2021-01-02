@@ -87,10 +87,26 @@ def constraintFunc(*args):
     #create some blendColors node with the same name of the joint
     for x in range(jointCount):
 
-        #blendColorsNode = cmds.createNode("blendColors", n = ogChain[x] + "_blend" )
-        # connect FK and IK chains into blendColors channels and then connect the output to the original joint chain
+        #setup orient constraints        
         cmds.orientConstraint((ogChain[x] + "_ik"), ogChain[x])
         cmds.orientConstraint((ogChain[x] + "_fk"), ogChain[x])
+
+        #setup SDK naming convention
+        sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+        ikSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_ikW0"
+        fkSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_fkW1"
+
+        #setup SDK
+        cmds.setAttr(sdkDriver, 0)
+        cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=0, dv=0)
+        cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=1, dv=0)
+
+        cmds.setAttr(sdkDriver, 1)
+        cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=1, dv=1)
+        cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
+        
+
+
 
     fkControllerCreator()
 
@@ -144,31 +160,31 @@ def showUI():
     cmds.menuItem(l="Leg")
     cmds.menuItem(l="Arm")
     
-    modeSwitcherText = cmds.text(l="Select IKFK switcher", al="left")
+    #modeSwitcherText = cmds.text(l="Select IKFK switcher", al="left")
     #cmds.textField()
     #cmds.button(l="<<<")
 
-    scaleControllerField = cmds.textField(en=10)
+    #scaleControllerField = cmds.textField(en=10)
     
     separator01 = cmds.separator(h=5)
 
     execButton = cmds.button(l="blendColors Mode", c=blendNodeFunc)
-    parentButton = cmds.button(l="Constraint Mode", c=constraintFunc)
+    parentButton = cmds.button(l="Constraint + SDK Mode", c=constraintFunc)
     
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
                         (chainMenu, "left", 8), (chainMenu, "top", 5),
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
-                        (scaleControllerField, "right", 5), (scaleControllerField, "left", 150),
+                        #(scaleControllerField, "right", 5), (scaleControllerField, "left", 150),
                         
                         #--------------------
                         (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
                         (parentButton, "bottom", 5), (parentButton, "left", 5), (parentButton, "right", 5)
                     ],
                     attachControl = [(separator01, "top", 5, chainMenu),
-                                     (modeSwitcherText, "top", 5, separator01),
-                                     (scaleControllerField, "top", 5, separator01),
+                                     #(modeSwitcherText, "top", 5, separator01),
+                                     #(scaleControllerField, "top", 5, separator01),
                     
                     ],
 
