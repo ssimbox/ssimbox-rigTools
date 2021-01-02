@@ -1,8 +1,13 @@
 import maya.cmds as cmds
 
 def duplicateChain(*args):
-    
+
     global chainMenu
+    global jointCount
+    global ogChain
+    global cosoLoc
+    global side
+    global selectChain
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
@@ -37,6 +42,8 @@ def duplicateChain(*args):
 
     cmds.parent((ogChain[0] + "_ik"), world = True)
     #cmds.parent((ogChain[0] + "_fk"), world = True)
+    cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
+    cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
     # Create a locator used for switching IK/FK mode
     cosoLoc = cmds.spaceLocator(n=side + selectChain + "_ikfk_Switch")
@@ -56,8 +63,9 @@ def duplicateChain(*args):
     
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
 
-    #cmds.parentConstraint(ogChain[1], cosoLocGrp, mo=1)
-
+def blendNodeFunc(*args):
+    
+    duplicateChain(*args)
     #create some blendColors node with the same name of the joint
     for x in range(jointCount):
 
@@ -69,11 +77,31 @@ def duplicateChain(*args):
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
         cmds.connectAttr(cosoLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
+    fkControllerCreator()
+
+
+def constraintFunc(*args):
+
+    duplicateChain(*args)
+
+    #create some blendColors node with the same name of the joint
+    for x in range(jointCount):
+
+        #blendColorsNode = cmds.createNode("blendColors", n = ogChain[x] + "_blend" )
+        # connect FK and IK chains into blendColors channels and then connect the output to the original joint chain
+        cmds.orientConstraint((ogChain[x] + "_ik"), ogChain[x])
+        cmds.orientConstraint((ogChain[x] + "_fk"), ogChain[x])
+
+    fkControllerCreator()
+
+    
+
+def fkControllerCreator():
     #create controllers and group offsets
     #change rotation, color
     for y in range(jointCount):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
-        fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0]
+        fk_controller = cmds.circle(n=ogChain[y] + "_anim", r=7)[0]
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
         cmds.parent(fk_controller, anim_group)
@@ -102,6 +130,7 @@ def duplicateChain(*args):
         else:
             pass
 
+
 def showUI():
     
     global chainMenu
@@ -123,7 +152,8 @@ def showUI():
     
     separator01 = cmds.separator(h=5)
 
-    execButton = cmds.button(l="GO", c=duplicateChain)
+    execButton = cmds.button(l="blendColors Mode", c=blendNodeFunc)
+    parentButton = cmds.button(l="Constraint Mode", c=constraintFunc)
     
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
@@ -133,14 +163,19 @@ def showUI():
                         (scaleControllerField, "right", 5), (scaleControllerField, "left", 150),
                         
                         #--------------------
-                        (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5)
+                        (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
+                        (parentButton, "bottom", 5), (parentButton, "left", 5), (parentButton, "right", 5)
                     ],
                     attachControl = [(separator01, "top", 5, chainMenu),
                                      (modeSwitcherText, "top", 5, separator01),
                                      (scaleControllerField, "top", 5, separator01),
                     
+                    ],
+
+                    attachPosition = [(execButton, "left", 0, 26),
+                                      (parentButton, "right", 0, 24)
+
                     ]
-    
     
     
     )
