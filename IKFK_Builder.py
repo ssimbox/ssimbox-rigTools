@@ -51,7 +51,7 @@ def duplicateChain(*args):
     cmds.color(cosoLoc, rgb=(255, 255, 0))
     cmds.delete(cmds.pointConstraint(cosoLoc, cosoLocGrp))
     cmds.parent(cosoLoc, cosoLocGrp)
-    #cmds.delete(cmds.parentConstraint(ogChain[1], ogChain[2], cosoLoc))
+    cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], cosoLoc))
     cmds.addAttr(cosoLoc, ln="FKIK_Mode", at="short", min=0, max=1, k=1, r=1)
     cmds.move(0,0,-11, cosoLocGrp, r=1)
     
@@ -77,6 +77,7 @@ def blendNodeFunc(*args):
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
         cmds.connectAttr(cosoLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
+    ikChainBuild()
     fkControllerCreator()
 
 
@@ -104,8 +105,6 @@ def constraintFunc(*args):
         cmds.setAttr(sdkDriver, 1)
         cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=1, dv=1)
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
-        
-
 
 
     fkControllerCreator()
@@ -113,11 +112,16 @@ def constraintFunc(*args):
     
 
 def fkControllerCreator():
+
+    global scaleControllerField
+
+    controllerScale = cmds.intField(scaleControllerField, q=1, v=1)
+
     #create controllers and group offsets
     #change rotation, color
     for y in range(jointCount):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
-        fk_controller = cmds.circle(n=ogChain[y] + "_anim", r=7)[0]
+        fk_controller = cmds.circle(n=ogChain[y] + "_anim", r=controllerScale)[0]
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
         cmds.parent(fk_controller, anim_group)
@@ -134,7 +138,7 @@ def fkControllerCreator():
     for x in reversed(range(jointCount)):
         if x == 0:
             continue
-        cmds.parent(ogChain[x] + "_anim_grp", ogChain[x-1] + "_anim" )
+        cmds.parent(ogChain[x] + "_anim_grp", ogChain[x-1] + "_anim")
 
     # Orient Constraint _anim controllers with _fk hierarchy
     for x in range(jointCount):
@@ -146,10 +150,25 @@ def fkControllerCreator():
         else:
             pass
 
+def ikChainBuild():
+    
+    if selectChain == "Arm":
+        newHand = cmds.joint(n=side + "hand_ik")
+        cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", newHand))
+        #cmds.matchTransform(newHand, ogChain[2] + "_ik")
+        cmds.makeIdentity(newHand, a = 1, t = 1, r = 1, s = 0)
+        cmds.move(10,0,0, newHand, r=1, os=1)
+        cmds.parent(newHand, ogChain[2] + "_ik")
+        handIkHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=newHand, sol="ikSCsolver")
+
+    armIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
+
+
 
 def showUI():
     
     global chainMenu
+    global scaleControllerField
     
     if cmds.window("switchModeUI", ex = 1): cmds.deleteUI("switchModeUI")
     myWin = cmds.window("switchModeUI", t="IKFK Builder", w=300, h=300, s=1)
@@ -164,7 +183,8 @@ def showUI():
     #cmds.textField()
     #cmds.button(l="<<<")
 
-    #scaleControllerField = cmds.textField(en=10)
+    scaleControllerText = cmds.text(l="FK Controllers size")
+    scaleControllerField = cmds.intField(en=10, v=5, min=1)
     
     separator01 = cmds.separator(h=5)
 
@@ -173,10 +193,11 @@ def showUI():
     
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
-                        (chainMenu, "left", 8), (chainMenu, "top", 5),
+                        (chainMenu, "left", 8), (chainMenu, "top", 5), (chainMenu, "right", 8),
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
-                        #(scaleControllerField, "right", 5), (scaleControllerField, "left", 150),
+                        (scaleControllerField, "right", 5), (scaleControllerField, "left", 150),
+                        (scaleControllerText, "left", 5),
                         
                         #--------------------
                         (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
@@ -184,7 +205,8 @@ def showUI():
                     ],
                     attachControl = [(separator01, "top", 5, chainMenu),
                                      #(modeSwitcherText, "top", 5, separator01),
-                                     #(scaleControllerField, "top", 5, separator01),
+                                     (scaleControllerField, "top", 5, separator01),
+                                     (scaleControllerText, "top", 6, separator01),
                     
                     ],
 
