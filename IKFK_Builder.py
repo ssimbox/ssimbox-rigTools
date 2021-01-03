@@ -1,5 +1,6 @@
 import maya.cmds as cmds
 
+
 def duplicateChain(*args):
 
     global chainMenu
@@ -51,9 +52,10 @@ def duplicateChain(*args):
     cmds.color(cosoLoc, rgb=(255, 255, 0))
     cmds.delete(cmds.pointConstraint(cosoLoc, cosoLocGrp))
     cmds.parent(cosoLoc, cosoLocGrp)
-    cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], cosoLoc))
+    cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], cosoLocGrp))
     cmds.addAttr(cosoLoc, ln="FKIK_Mode", at="short", min=0, max=1, k=1, r=1)
     cmds.move(0,0,-11, cosoLocGrp, r=1)
+    cmds.parentConstraint(ogChain[1], cosoLocGrp, mo=1)
     
     axis = ["X", "Y", "Z"]
     for coord in axis:
@@ -106,7 +108,7 @@ def constraintFunc(*args):
         cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=1, dv=1)
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
 
-
+    ikChainBuild()
     fkControllerCreator()
 
     
@@ -152,16 +154,20 @@ def fkControllerCreator():
 
 def ikChainBuild():
     
-    if selectChain == "Arm":
-        newHand = cmds.joint(n=side + "hand_ik")
-        cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", newHand))
-        #cmds.matchTransform(newHand, ogChain[2] + "_ik")
-        cmds.makeIdentity(newHand, a = 1, t = 1, r = 1, s = 0)
-        cmds.move(10,0,0, newHand, r=1, os=1)
-        cmds.parent(newHand, ogChain[2] + "_ik")
-        handIkHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=newHand, sol="ikSCsolver")
+    armikHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
+    
 
-    armIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
+    if selectChain == "Arm":
+        ikHandJoint = cmds.joint(n=side + "hand_ik")
+        cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
+        cmds.makeIdentity(ikHandJoint, a = 1, t = 1, r = 1, s = 0)
+        cmds.move(10,0,0, ikHandJoint, r=1, os=1)
+        cmds.parent(ikHandJoint, ogChain[2] + "_ik")
+        handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
+        cmds.parent(handikHandle[0], armikHandle[0])
+    else:
+        ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
+        toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
 
 
 
