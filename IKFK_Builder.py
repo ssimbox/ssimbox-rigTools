@@ -1,5 +1,6 @@
 import maya.cmds as cmds
-from ctrlUI_lib import createCube
+
+#from ctrlUI_lib import createCube
 
 
 def duplicateChain(*args):
@@ -185,8 +186,20 @@ def ikChainBuild():
         cmds.parent(handikHandle[0], armikHandle[0])
         
         #create IK controller
-        createCube()
-        cmds.group(n=ctrlUI_lib.crvCube + "_grp")
+        crvIkCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1), (1, 1, 1),
+                                     (-1, 1, 1), (-1, -1, 1), (-1, -1, -1),
+                                     (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
+                                     (1, -1, 1), (1, 1, 1), (1, 1, -1),
+                                     (1, -1, -1), (1, -1, 1), (1, -1, -1), (-1, -1, -1)], 
+                                     k=[0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
+        crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
+        cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
+        cmds.setAttr(crvIkCubeGrp + ".scaleX", controllerScale)
+        cmds.setAttr(crvIkCubeGrp + ".scaleY", controllerScale)
+        cmds.setAttr(crvIkCubeGrp + ".scaleZ", controllerScale)
+
+        cmds.parent(armikHandle[0], crvIkCube)
+
 
 
     else:
