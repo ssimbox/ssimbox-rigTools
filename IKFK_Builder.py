@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+from ctrlUI_lib import createCube
 
 
 def duplicateChain(*args):
@@ -182,10 +183,14 @@ def ikChainBuild():
         cmds.parent(ikHandJoint, ogChain[2] + "_ik")
         handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
         cmds.parent(handikHandle[0], armikHandle[0])
+        
+        #create IK controller
+        createCube()
+        cmds.group(n=ctrlUI_lib.crvCube + "_grp")
 
 
     else:
-
+    
         ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
         toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
         
