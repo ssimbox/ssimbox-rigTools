@@ -21,7 +21,7 @@ def duplicateChain(*args):
     lengthSelection = cmds.ls(sl=1)
     for x in enumerate(lengthSelection):
         jointCount += 1
-    """ 
+    """     
     selectChain = cmds.optionMenu("UI_chainMenu", q=1, v=1)
     if selectChain == "Leg": 
         jointCount = 5
@@ -55,7 +55,7 @@ def duplicateChain(*args):
     cmds.parent(cosoLoc, cosoLocGrp)
     cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], cosoLocGrp))
     cmds.addAttr(cosoLoc, ln="FKIK_Mode", at="short", min=0, max=1, k=1, r=1)
-    cmds.move(0,0,-11, cosoLocGrp, r=1) #you must improve this shit
+    cmds.move(0,0,-12, cosoLocGrp, r=1) #you must improve this shit
     cmds.parentConstraint(ogChain[1], cosoLocGrp, mo=1)
     
     #remove .t, .r, .s and .v from the channelbox
@@ -86,6 +86,8 @@ def blendNodeFunc(*args):
 
 
 def constraintFunc(*args):
+
+    global sdkDriver
 
     duplicateChain(*args)
 
@@ -119,6 +121,7 @@ def fkControllerCreator():
 
     global scaleControllerField
     global orientControllerMenu
+    global controllerScale
 
     controllerScale = cmds.intField(scaleControllerField, q=1, v=1)
     orientController = cmds.optionMenu("UI_orientControllerMenu", q=1, v=1)
@@ -163,6 +166,12 @@ def fkControllerCreator():
 
 def ikChainBuild():
     
+    global controllerScale
+    global scaleControllerField
+    global sdkDriver
+
+    controllerScale = cmds.intField(scaleControllerField, q=1, v=1)
+    
     armikHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
 
     if selectChain == "Arm":
@@ -173,11 +182,31 @@ def ikChainBuild():
         cmds.parent(ikHandJoint, ogChain[2] + "_ik")
         handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
         cmds.parent(handikHandle[0], armikHandle[0])
+
+
     else:
+
         ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
         toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
+        
+        # Create and place ik controller
+        ikFootControl = cmds.circle(n=side + "leg_anim_ik", r=controllerScale)
+        ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
+        cmds.rotate(90,0,0, ikFootControl)
+        cmds.move(0,-3.2,0, ikFootControl, r=1)
+        cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
+        cmds.delete(ikFootControl[0], ch = 1)
+        cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
+        
+        # pivot snapping on ankle joint
+        piv = cmds.xform(ogChain[2], q=True, ws=True, t=True)
+        cmds.xform(ikFootControl[0], ws=True, piv=piv)
 
+        cmds.parent(ballikHandle[0], toeikHandle[0], armikHandle[0], ikFootControl[0])
 
+        
+
+    
 
 def showUI():
     
