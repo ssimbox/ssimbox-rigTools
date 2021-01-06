@@ -1,12 +1,9 @@
 import maya.cmds as cmds
 
-#from ctrlUI_lib import createCube
-
-
 def duplicateChain(*args):
 
     global chainMenu
-    global jointCount
+    global jointCount   
     global ogChain
     global cosoLoc
     global side
@@ -45,11 +42,10 @@ def duplicateChain(*args):
         cmds.select(cl = 1)
 
     cmds.parent((ogChain[0] + "_ik"), world = True)
-    #cmds.parent((ogChain[0] + "_fk"), world = True)
     cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
-    # Create a locator used for switching IK/FK mode
+    # Create a locator used for switching IK/FK mode and snap it between two joints
     cosoLoc = cmds.spaceLocator(n=side + selectChain + "_ikfk_Switch")
     cosoLocGrp = cmds.group(em=1, n=cosoLoc[0] + "_grp")
     cmds.color(cosoLoc, rgb=(255, 255, 0)) #yellow
@@ -89,13 +85,11 @@ def blendNodeFunc(*args):
 
 def constraintFunc(*args):
 
-    global sdkDriver
-
     duplicateChain(*args)
 
     #create some blendColors node with the same name of the joint
     for x in range(jointCount):
-
+        
         #setup orient constraints        
         cmds.orientConstraint((ogChain[x] + "_ik"), ogChain[x])
         cmds.orientConstraint((ogChain[x] + "_fk"), ogChain[x])
@@ -132,7 +126,7 @@ def fkControllerCreator():
     #change rotation, color
     for y in range(jointCount):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
-        fk_controller = cmds.circle(n=ogChain[y] + "_anim", r=controllerScale)[0]
+        fk_controller = cmds.circle(n=ogChain[y] + "_anim", r=controllerScale)[0] #if not [0] it'll warn some stuff related to Maya underworld
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
         cmds.parent(fk_controller, anim_group)
@@ -149,13 +143,22 @@ def fkControllerCreator():
             cmds.color(fk_controller, rgb=(0, 0, 255))
         else:
             cmds.color(fk_controller, rgb=(255, 0, 0))
-    
+        
+        #set SDK visibility
+
+        sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+        cmds.setAttr(sdkDriver, 0)
+        cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
+        cmds.setAttr(sdkDriver, 1)
+        cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=1, dv=0)
+
     # Create ordered hierarchy
     for x in reversed(range(jointCount)):
         if x == 0:
             continue
         cmds.parent(ogChain[x] + "_anim_grp", ogChain[x-1] + "_anim")
 
+    
     # Orient Constraint _anim controllers with _fk hierarchy
     for x in range(jointCount):
         cmds.orientConstraint(ogChain[x] + "_anim", ogChain[x] + "_fk")
@@ -165,65 +168,81 @@ def fkControllerCreator():
                 cmds.delete(ogChain[jointCount-1] + "_anim_grp")
         else:
             pass
+    
 
 def ikChainBuild():
-    
-    global controllerScale
-    global scaleControllerField
-    global sdkDriver
+
+    global masterIkHandle
 
     controllerScale = cmds.intField(scaleControllerField, q=1, v=1)
     
-    armikHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
+    masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
+    cmds.setAttr(masterIkHandle[0] + ".visibility", 0)
 
-    if selectChain == "Arm":
-        ikHandJoint = cmds.joint(n=side + "hand_ik")
-        cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
-        cmds.makeIdentity(ikHandJoint, a = 1, t = 1, r = 1, s = 0)
-        cmds.move(10,0,0, ikHandJoint, r=1, os=1)
-        cmds.parent(ikHandJoint, ogChain[2] + "_ik")
-        handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
-        cmds.parent(handikHandle[0], armikHandle[0])
-        
-        #create IK controller
-        crvIkCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1), (1, 1, 1),
-                                     (-1, 1, 1), (-1, -1, 1), (-1, -1, -1),
-                                     (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
-                                     (1, -1, 1), (1, 1, 1), (1, 1, -1),
-                                     (1, -1, -1), (1, -1, 1), (1, -1, -1), (-1, -1, -1)], 
-                                     k=[0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
-        crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
-        cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
-        cmds.setAttr(crvIkCubeGrp + ".scaleX", controllerScale)
-        cmds.setAttr(crvIkCubeGrp + ".scaleY", controllerScale)
-        cmds.setAttr(crvIkCubeGrp + ".scaleZ", controllerScale)
-
-        cmds.parent(armikHandle[0], crvIkCube)
+    if selectChain == "Arm": 
+        armIk()
+    else:   
+        legIK()
 
 
+def armIk():
 
-    else:
+    ikHandJoint = cmds.joint(n=side + "hand_ik")
+    cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
+    cmds.makeIdentity(ikHandJoint, a = 1, t = 1, r = 1, s = 0)
+    cmds.move(10,0,0, ikHandJoint, r=1, os=1)
+    cmds.parent(ikHandJoint, ogChain[2] + "_ik")
+    handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
+    cmds.parent(handikHandle[0], masterIkHandle[0])
     
-        ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
-        toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
-        
-        # Create and place ik controller
-        ikFootControl = cmds.circle(n=side + "leg_anim_ik", r=controllerScale)
-        ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
-        cmds.rotate(90,0,0, ikFootControl)
-        cmds.move(0,-3.2,0, ikFootControl, r=1)
-        cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
-        cmds.delete(ikFootControl[0], ch = 1)
-        cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
-        
-        # pivot snapping on ankle joint
-        piv = cmds.xform(ogChain[2], q=True, ws=True, t=True)
-        cmds.xform(ikFootControl[0], ws=True, piv=piv)
+    #create IK controller
+    crvIkCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1), (1, 1, 1),
+                                    (-1, 1, 1), (-1, -1, 1), (-1, -1, -1),
+                                    (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
+                                    (1, -1, 1), (1, 1, 1), (1, 1, -1),
+                                    (1, -1, -1), (1, -1, 1), (1, -1, -1), (-1, -1, -1)], 
+                                    k=[0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
+    crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
+    cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
+    cmds.setAttr(crvIkCubeGrp + ".scaleX", controllerScale)
+    cmds.setAttr(crvIkCubeGrp + ".scaleY", controllerScale)
+    cmds.setAttr(crvIkCubeGrp + ".scaleZ", controllerScale)
 
-        cmds.parent(ballikHandle[0], toeikHandle[0], armikHandle[0], ikFootControl[0])
+    cmds.parent(masterIkHandle[0], crvIkCube)
+    
+    #set SDK visibility
+    sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+    cmds.setAttr(sdkDriver, 0)
+    cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
+    cmds.setAttr(sdkDriver, 1)
+    cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
 
-        
+def legIK():
 
+    ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
+    toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
+    
+    # Create and place ik controller
+    ikFootControl = cmds.circle(n=side + "leg_anim_ik", r=controllerScale)
+    ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
+    cmds.rotate(90,0,0, ikFootControl)
+    cmds.move(0,-3.2,0, ikFootControl, r=1)
+    cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
+    cmds.delete(ikFootControl[0], ch = 1)
+    cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
+    
+    # pivot snapping on ankle joint
+    piv = cmds.xform(ogChain[2], q=True, ws=True, t=True)
+    cmds.xform(ikFootControl[0], ws=True, piv=piv)
+
+    cmds.parent(ballikHandle[0], toeikHandle[0], masterIkHandle[0], ikFootControl[0])
+
+    #set SDK visibility
+    sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+    cmds.setAttr(sdkDriver, 0)
+    cmds.setDrivenKeyframe(ikFootControlGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
+    cmds.setAttr(sdkDriver, 1)
+    cmds.setDrivenKeyframe(ikFootControlGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
     
 
 def showUI():

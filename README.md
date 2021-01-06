@@ -1,9 +1,13 @@
 # IK FK Builder development
 
- - TO DO List
+TO DO List
 
-1) Setup IK Handles
-2) Better FK controllers orient managemenent
-3) Twist joint
-4) Complex leg
+- IK complete setup
+- Better FK controllers orient managemenent
+- Twist joint
+- Complex leg
 
+ACTUALLY
+- IK Handle without Pole Vector
+- FK controllers orient acceptable but shitty
+- Pls, less spaghetti 
