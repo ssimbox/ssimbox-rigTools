@@ -1,8 +1,7 @@
 import maya.cmds as cmds
 
-def duplicateChain(*args):
+def duplicateChain():
 
-    global chainMenu
     global jointCount   
     global ogChain
     global cosoLoc
@@ -14,17 +13,18 @@ def duplicateChain(*args):
     ogChain.append(ogRootchain)
     ogChain.reverse()
     side = ogRootchain[0:2]
-
-    #how many joints to select?
-    """ testing on selecting the entire chain
+    
+    """
+    testing on selecting the entire chain
     lengthSelection = cmds.ls(sl=1)
     for x in enumerate(lengthSelection):
         jointCount += 1
     """     
+    #how many joints to select?
     selectChain = cmds.optionMenu("UI_chainMenu", q=1, v=1)
     if selectChain == "Leg": 
         jointCount = 5
-    else: #this is totally unscalable but for now it's good
+    else: #this is totally unscalable but for now it's ok
         jointCount = 3
 
     #suffix for the new chains
@@ -65,7 +65,9 @@ def duplicateChain(*args):
     
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
 
-def blendNodeFunc(*args):
+    
+
+def blendNodeFunc(scaleController, *args):
 
     duplicateChain(*args)
     #create some blendColors node with the same name of the joint
@@ -79,8 +81,10 @@ def blendNodeFunc(*args):
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
         cmds.connectAttr(cosoLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
-    ikChainBuild()
-    fkControllerCreator()
+    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
+    
+    ikChainBuild(scaleIK=scaleController)
+    fkControllerCreator(fkSize=scaleController)
 
 
 def constraintFunc(*args):
@@ -108,25 +112,27 @@ def constraintFunc(*args):
         cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=1, dv=1)
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
 
-    ikChainBuild()
-    fkControllerCreator()
+    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
+    
+    ikChainBuild(scaleIK=scaleController)
+    fkControllerCreator(fkSize=scaleController)
 
     
 
-def fkControllerCreator():
-
-    global scaleControllerField
-    global orientControllerMenu
-    global controllerScale
-
-    controllerScale = cmds.intField(scaleControllerField, q=1, v=1)
+def fkControllerCreator(fkSize):
+    
     orientController = cmds.optionMenu("UI_orientControllerMenu", q=1, v=1)
 
     #create controllers and group offsets
     #change rotation, color
     for y in range(jointCount):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
-        fk_controller = cmds.circle(n=ogChain[y] + "_anim", r=controllerScale)[0] #if not [0] it'll warn some stuff related to Maya underworld
+        fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] #if not [0] it'll warn some stuff related to Maya underworld
+        
+        cmds.setAttr(fk_controller + ".scaleX", fkSize)
+        cmds.setAttr(fk_controller + ".scaleY", fkSize)
+        cmds.setAttr(fk_controller + ".scaleZ", fkSize)
+
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
         cmds.parent(fk_controller, anim_group)
@@ -135,7 +141,7 @@ def fkControllerCreator():
         if orientController == "y": cmds.rotate(0,90,0, fk_controller)
         if orientController == "z": cmds.rotate(0,0,90, fk_controller)
         
-        cmds.makeIdentity(fk_controller, a = 1, t = 1, r = 1, s = 1)
+        cmds.makeIdentity(fk_controller, a = 1, t = 1, r = 1, s = 0)
         cmds.delete(fk_controller, ch = 1)
 
 
@@ -169,23 +175,42 @@ def fkControllerCreator():
         else:
             pass
     
+    print ("first", fkSize)
+    
 
-def ikChainBuild():
+def ikChainBuild(scaleIK):
 
     global masterIkHandle
-
-    controllerScale = cmds.intField(scaleControllerField, q=1, v=1)
     
     masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
     cmds.setAttr(masterIkHandle[0] + ".visibility", 0)
-
+    """
+    pvController = cmds.curve( d=1, p=[( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
+                                        ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
+                                        ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
+                                        ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
+                                        ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
+                                        ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
+                                        ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
+                                        ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
+                                        ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
+                                        ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
+                                        ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
+                                        ( 0, 0, -1)], 
+                                        k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
+    """
+    
     if selectChain == "Arm": 
-        armIk()
+        #print ("scaleController", scaleControllerField)
+        armIk(armIkScale=scaleIK)
     else:   
-        legIK()
+        #print ("scaleController", scaleControllerField)
+        legIK(ikFootScale=scaleIK)
+    
 
 
-def armIk():
+def armIk(armIkScale):
+
 
     ikHandJoint = cmds.joint(n=side + "hand_ik")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
@@ -204,9 +229,10 @@ def armIk():
                                     k=[0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
     crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
-    cmds.setAttr(crvIkCubeGrp + ".scaleX", controllerScale)
-    cmds.setAttr(crvIkCubeGrp + ".scaleY", controllerScale)
-    cmds.setAttr(crvIkCubeGrp + ".scaleZ", controllerScale)
+    print("arms", armIkScale)
+    cmds.setAttr(crvIkCubeGrp + ".scaleX", armIkScale)
+    cmds.setAttr(crvIkCubeGrp + ".scaleY", armIkScale)
+    cmds.setAttr(crvIkCubeGrp + ".scaleZ", armIkScale)
 
     cmds.parent(masterIkHandle[0], crvIkCube)
     
@@ -217,14 +243,17 @@ def armIk():
     cmds.setAttr(sdkDriver, 1)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
 
-def legIK():
+def legIK(ikFootScale):
 
     ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
     toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
     
     # Create and place ik controller
-    ikFootControl = cmds.circle(n=side + "leg_anim_ik", r=controllerScale)
+    ikFootControl = cmds.circle(n=side + "leg_anim_ik")
     ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
+    cmds.setAttr(ikFootControlGrp + ".scaleX", ikFootScale)
+    cmds.setAttr(ikFootControlGrp + ".scaleY", ikFootScale)
+    cmds.setAttr(ikFootControlGrp + ".scaleZ", ikFootScale)
     cmds.rotate(90,0,0, ikFootControl)
     cmds.move(0,-3.2,0, ikFootControl, r=1)
     cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
