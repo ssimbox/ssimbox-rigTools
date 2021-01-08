@@ -1,13 +1,12 @@
 import maya.cmds as cmds
 from functools import partial
 
-def duplicateChain(scaleController, blendNodeFunc, *args):
+def duplicateChain(scaleController, chainMenu, chainLen, *args):
 
-    global jointCount
     global ogChain
     global cosoLoc
     global side
-    global selectChain #UI variable
+    global modeCheckBox_UI
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
@@ -15,17 +14,19 @@ def duplicateChain(scaleController, blendNodeFunc, *args):
     ogChain.reverse()
     side = ogRootchain[0:2]
  
-    #how many joints to select?
-    selectChain = cmds.optionMenu("UI_chainMenu", q=1, v=1)
-    if selectChain == "Leg": 
-        jointCount = 5
+    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
+    
+    chainMenu = cmds.optionMenu("chainMenu_UI", q=1, v=1)
+
+    if chainMenu == "Leg": 
+        chainLen = 5
     else: #this is totally unscalable but for now it's ok
-        jointCount = 3
+        chainLen = 3
 
     #suffix for the new chains
     newJointList = ["_ik", "_fk"]
     for newJoint in newJointList:
-        for i in range(jointCount):
+        for i in range(chainLen):
             newJointName = ogChain[i] + newJoint
 
             #create a joint, copy their position and freeze transform
@@ -41,7 +42,7 @@ def duplicateChain(scaleController, blendNodeFunc, *args):
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
     # Create a locator used for switching IK/FK mode and snap it between two joints
-    cosoLoc = cmds.spaceLocator(n=side + selectChain + "_ikfk_Switch")
+    cosoLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
     cosoLocGrp = cmds.group(em=1, n=cosoLoc[0] + "_grp")
     cmds.color(cosoLoc, rgb=(255, 255, 0)) #yellow
     cmds.delete(cmds.pointConstraint(cosoLoc, cosoLocGrp))
@@ -57,15 +58,20 @@ def duplicateChain(scaleController, blendNodeFunc, *args):
         cmds.setAttr(cosoLoc[0] + ".translate" + coord, k=0, l=1)
         cmds.setAttr(cosoLoc[0] + ".rotate" + coord, k=0, l=1)
         cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
-    
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
     
-    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
+
+    modeCheckBox = cmds.checkBox(modeCheckBox_UI, q=1, v=1) 
+
+    if modeCheckBox == 0:
+        blendNodeFunc(scaleController, selectChain=chainMenu, jointCount=chainLen)
+        #print modeCheckBox
+    else:
+        constraintFunc(scaleController, selectChain=chainMenu, jointCount=chainLen)
+        #print modeCheckBox
 
 
-
-
-def blendNodeFunc(scaleController, *args):
+def blendNodeFunc(scaleController, selectChain, jointCount):
 
     #create some blendColors node with the same name of the joint
     for x in range(jointCount):
@@ -79,13 +85,11 @@ def blendNodeFunc(scaleController, *args):
         cmds.connectAttr(cosoLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
     
-    ikChainBuild(scaleIK=scaleController)
-    fkControllerCreator(fkSize=scaleController)
+    ikChainBuild(scaleIK=scaleController, HandleName=selectChain)
+    fkControllerCreator(fkSize=scaleController, legOrArm=selectChain,jointCount=jointCount)
 
 
-def constraintFunc(*args):
-
-    duplicateChain(*args)
+def constraintFunc(scaleController, selectChain, jointCount):
 
     #create some blendColors node with the same name of the joint
     for x in range(jointCount):
@@ -108,14 +112,13 @@ def constraintFunc(*args):
         cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=1, dv=1)
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
 
-    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
     
-    ikChainBuild(scaleIK=scaleController)
-    fkControllerCreator(fkSize=scaleController)
+    ikChainBuild(scaleIK=scaleController, HandleName=selectChain)
+    fkControllerCreator(fkSize=scaleController, legOrArm=selectChain, jointCount=jointCount)
 
     
 
-def fkControllerCreator(fkSize):
+def fkControllerCreator(fkSize, legOrArm, jointCount):
     
     orientController = cmds.optionMenu("UI_orientControllerMenu", q=1, v=1)
 
@@ -165,7 +168,7 @@ def fkControllerCreator(fkSize):
     for x in range(jointCount):
         cmds.orientConstraint(ogChain[x] + "_anim", ogChain[x] + "_fk")
         # If leg chain is selected delete toe controller, else not
-        if selectChain == "Leg":
+        if legOrArm == "Leg":
             if x == (jointCount-1):
                 cmds.delete(ogChain[jointCount-1] + "_anim_grp")
         else:
@@ -174,11 +177,11 @@ def fkControllerCreator(fkSize):
     print ("first", fkSize)
     
 
-def ikChainBuild(scaleIK):
+def ikChainBuild(scaleIK, HandleName):
 
     global masterIkHandle
     
-    masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + selectChain + "_ikHandle")
+    masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + HandleName + "_ikHandle")
     cmds.setAttr(masterIkHandle[0] + ".visibility", 0)
     """
     pvController = cmds.curve( d=1, p=[( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
@@ -196,7 +199,7 @@ def ikChainBuild(scaleIK):
                                         k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
     """
     
-    if selectChain == "Arm": 
+    if HandleName == "Arm": 
         #print ("scaleController", scaleControllerField)
         armIk(armIkScale=scaleIK)
     else:   
@@ -271,18 +274,21 @@ def legIK(ikFootScale):
 
 def showUI():
     
-    global chainMenu
+    global chainMenu_UI
     global scaleControllerField
     global orientControllerMenu
+    global modeCheckBox_UI
     
     if cmds.window("switchModeUI", ex = 1): cmds.deleteUI("switchModeUI")
     myWin = cmds.window("switchModeUI", t="IKFK Builder", w=300, h=300, s=1)
     mainLayout = cmds.formLayout(nd=50)
     
     # Useful in selecting which chain: Leg or Arm? 
-    chainMenu = cmds.optionMenu("UI_chainMenu", l="Which chain?")
+    chainMenu_UI = cmds.optionMenu("chainMenu_UI", l="Which chain?")
     cmds.menuItem(l="Leg")
     cmds.menuItem(l="Arm")
+
+    modeCheckBox_UI = cmds.checkBox(label = "orientConstraint+SDK Mode", v=0)
 
     # Useful in orienting FK controllers as the user wishes. Maybe this can be improved
     orientControllerMenu = cmds.optionMenu("UI_orientControllerMenu", l="What's the secondary axis")
@@ -298,12 +304,13 @@ def showUI():
     separator02 = cmds.separator(h=5)
 
     #
-    blend_execButton = cmds.button(l="blendColors Mode", c=duplicateChain)
-    parent_execButton = cmds.button(l="Constraint + SDK Mode", c=duplicateChain)
+    execButton = cmds.button(l="Duplicate Chain", c=partial(duplicateChain, blendNodeFunc, constraintFunc))
+    #parent_execButton = cmds.button(l="Constraint + SDK Mode", c=duplicateChain)
     
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
-                        (chainMenu, "left", 8), (chainMenu, "top", 5), (chainMenu, "right", 8),
+                        (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5),
+                        (modeCheckBox_UI, "right", 5), (modeCheckBox_UI, "top", 5),
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
                         
@@ -315,21 +322,18 @@ def showUI():
                         (orientControllerMenu, "left", 8), (orientControllerMenu, "top", 5),
                         #--------------------
                         
-                        (blend_execButton, "bottom", 5), (blend_execButton, "left", 5), (blend_execButton, "right", 5),
-                        (parent_execButton, "bottom", 5), (parent_execButton, "left", 5), (parent_execButton, "right", 5)
+                        (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
+                        #(parent_execButton, "bottom", 5), (parent_execButton, "left", 5), (parent_execButton, "right", 5)
                     ],
-                    attachControl = [(separator01, "top", 5, chainMenu),
+                    attachControl = [(separator01, "top", 5, chainMenu_UI),
                                      (scaleControllerField, "top", 5, separator01),
                                      (scaleControllerText, "top", 6, separator01),
                                      (separator02, "top", 6, scaleControllerField),
                                      (orientControllerMenu, "top", 6, separator02)
                     
                     ],
-
-                    attachPosition = [(blend_execButton, "left", 0, 26),
-                                      (parent_execButton, "right", 0, 24)
-
-                    ]
+                    
+                    #attachPosition = [(execButton, "left", 0, 26), (parent_execButton, "right", 0, 24)]
     
     
     )
