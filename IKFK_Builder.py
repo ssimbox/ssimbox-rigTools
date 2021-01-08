@@ -1,25 +1,20 @@
 import maya.cmds as cmds
+from functools import partial
 
-def duplicateChain():
+def duplicateChain(scaleController, blendNodeFunc, *args):
 
-    global jointCount   
+    global jointCount
     global ogChain
     global cosoLoc
     global side
-    global selectChain
+    global selectChain #UI variable
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
     ogChain.append(ogRootchain)
     ogChain.reverse()
     side = ogRootchain[0:2]
-    
-    """
-    testing on selecting the entire chain
-    lengthSelection = cmds.ls(sl=1)
-    for x in enumerate(lengthSelection):
-        jointCount += 1
-    """     
+ 
     #how many joints to select?
     selectChain = cmds.optionMenu("UI_chainMenu", q=1, v=1)
     if selectChain == "Leg": 
@@ -64,16 +59,18 @@ def duplicateChain():
         cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
     
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
-
     
+    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
+
+
+
 
 def blendNodeFunc(scaleController, *args):
 
-    duplicateChain(*args)
     #create some blendColors node with the same name of the joint
     for x in range(jointCount):
 
-        blendColorsNode = cmds.createNode("blendColors", n = ogChain[x] + "_blend" )
+        blendColorsNode = cmds.createNode("blendColors", n = ogChain[x] + "_blend")
 
         # connect FK and IK chains into blendColors channels and then connect the output to the original joint chain
         cmds.connectAttr((ogChain[x] + "_ik.rotate"), blendColorsNode + ".color1")
@@ -81,7 +78,6 @@ def blendNodeFunc(scaleController, *args):
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
         cmds.connectAttr(cosoLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
-    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
     
     ikChainBuild(scaleIK=scaleController)
     fkControllerCreator(fkSize=scaleController)
@@ -211,7 +207,6 @@ def ikChainBuild(scaleIK):
 
 def armIk(armIkScale):
 
-
     ikHandJoint = cmds.joint(n=side + "hand_ik")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
     cmds.makeIdentity(ikHandJoint, a = 1, t = 1, r = 1, s = 0)
@@ -303,8 +298,8 @@ def showUI():
     separator02 = cmds.separator(h=5)
 
     #
-    blend_execButton = cmds.button(l="blendColors Mode", c=blendNodeFunc)
-    parent_execButton = cmds.button(l="Constraint + SDK Mode", c=constraintFunc)
+    blend_execButton = cmds.button(l="blendColors Mode", c=duplicateChain)
+    parent_execButton = cmds.button(l="Constraint + SDK Mode", c=duplicateChain)
     
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
