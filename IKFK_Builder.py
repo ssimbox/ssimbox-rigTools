@@ -13,8 +13,11 @@ def duplicateChain(scaleController, chainMenu, *args):
     ogChain.append(ogRootchain)
     ogChain.reverse()
     side = ogRootchain[0:2]
- 
-    scaleController = cmds.intField(scaleControllerField, q=1, v=1)
+    
+    # Initialize input from UI
+    scaleController = cmds.intField(scaleField_UI, q=1, v=1)
+    blendCheckbox = cmds.checkBox(blendCheckbox_UI, q=1, v=1) 
+    constraintCheckBox = cmds.checkBox(constraintCheckBox_UI, q=1, v=1) 
     
     chainMenu = cmds.optionMenu("chainMenu_UI", q=1, v=1)
 
@@ -27,6 +30,11 @@ def duplicateChain(scaleController, chainMenu, *args):
     newJointList = ["_ik", "_fk"]
     for newJoint in newJointList:
         for i in range(chainLen):
+            
+            if blendCheckbox == 0 and constraintCheckBox == 0:
+                cmds.error("pls, select one relation type")
+                break
+
             newJointName = ogChain[i] + newJoint
 
             #create a joint, copy their position and freeze transform
@@ -58,23 +66,11 @@ def duplicateChain(scaleController, chainMenu, *args):
         cmds.setAttr(cosoLoc[0] + ".rotate" + coord, k=0, l=1)
         cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
-    
-
-    blendCheckbox = cmds.checkBox(blendCheckbox_UI, q=1, v=1) 
-    constraintCheckBox = cmds.checkBox(constraintCheckBox_UI, q=1, v=1) 
 
     if blendCheckbox == 1:
         blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
     if constraintCheckBox == 1:
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
-
-def enabledCheckbox1(state):
-
-    cmds.checkBox(constraintCheckBox_UI, e=1, en=state-1)
-
-def enabledCheckbox2(state):
-    
-    cmds.checkBox(blendCheckbox_UI, e=1, en=state-1)
 
 def blendNodeFunc(scaleController, selectChain, *kekkeroni):
 
@@ -132,10 +128,9 @@ def fkControllerCreator(fkSize, legOrArm):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
         fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] #if not [0] it'll warn some stuff related to Maya underworld
         
-        cmds.setAttr(fk_controller + ".scaleX", fkSize)
-        cmds.setAttr(fk_controller + ".scaleY", fkSize)
-        cmds.setAttr(fk_controller + ".scaleZ", fkSize)
-
+        for x in ["X", "Y", "Z"]:
+            cmds.setAttr(fk_controller + ".scale" + x, fkSize)
+            
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
         cmds.parent(fk_controller, anim_group)
@@ -153,13 +148,12 @@ def fkControllerCreator(fkSize, legOrArm):
         else:
             cmds.color(fk_controller, rgb=(255, 0, 0))
         
-        #set SDK visibility
-
+        # Set SDK visibility
         sdkDriver = cosoLoc[0] + ".FKIK_Mode"
-        cmds.setAttr(sdkDriver, 0)
-        cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
         cmds.setAttr(sdkDriver, 1)
         cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=1, dv=0)
+        cmds.setAttr(sdkDriver, 0)
+        cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
 
     # Create ordered hierarchy
     for x in reversed(range(chainLen)):
@@ -200,10 +194,10 @@ def ikChainBuild(scaleIK, HandleName, masterIkHandle):
     """
     
     if HandleName == "Arm": 
-        #print ("scaleController", scaleControllerField)
+        #print ("scaleController", scaleField_UI)
         armIk(armIkScale=scaleIK, armikHandle=masterIkHandle)
     else:   
-        #print ("scaleController", scaleControllerField)
+        #print ("scaleController", scaleField_UI)
         legIK(ikFootScale=scaleIK, legikHandle=masterIkHandle)
 
     return masterIkHandle
@@ -224,13 +218,12 @@ def armIk(armIkScale, armikHandle):
                                     (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
                                     (1, -1, 1), (1, 1, 1), (1, 1, -1),
                                     (1, -1, -1), (1, -1, 1), (1, -1, -1), (-1, -1, -1)], 
-                                    k=[0 , 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
+                                    k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
     crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
-    print("arms", armIkScale)
-    cmds.setAttr(crvIkCubeGrp + ".scaleX", armIkScale)
-    cmds.setAttr(crvIkCubeGrp + ".scaleY", armIkScale)
-    cmds.setAttr(crvIkCubeGrp + ".scaleZ", armIkScale)
+    
+    for x in ["X", "Y", "Z"]:
+        cmds.setAttr(crvIkCubeGrp + ".scale" + x, armIkScale)
 
     cmds.parent(armikHandle[0], crvIkCube)
     
@@ -249,9 +242,10 @@ def legIK(ikFootScale, legikHandle):
     # Create and place ik controller
     ikFootControl = cmds.circle(n=side + "leg_anim_ik")
     ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
-    cmds.setAttr(ikFootControlGrp + ".scaleX", ikFootScale)
-    cmds.setAttr(ikFootControlGrp + ".scaleY", ikFootScale)
-    cmds.setAttr(ikFootControlGrp + ".scaleZ", ikFootScale)
+    
+    for x in ["X", "Y", "Z"]:
+        cmds.setAttr(ikFootControlGrp + ".scale"+x, ikFootScale)
+
     cmds.rotate(90,0,0, ikFootControl)
     cmds.move(0,-3.2,0, ikFootControl, r=1)
     cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
@@ -275,7 +269,7 @@ def legIK(ikFootScale, legikHandle):
 def showUI():
     
     global chainMenu_UI
-    global scaleControllerField
+    global scaleField_UI
     global orientControllerMenu
     global constraintCheckBox_UI
     global blendCheckbox_UI
@@ -289,8 +283,10 @@ def showUI():
     cmds.menuItem(l="Leg")
     cmds.menuItem(l="Arm")
 
-    constraintCheckBox_UI = cmds.checkBox(label = "orientConstraint+SDK Mode", v=0, cc=enabledCheckbox2)
-    blendCheckbox_UI = cmds.checkBox(label = "blendColorsNodes Mode", v=0, cc=enabledCheckbox1)
+    constraintCheckBox_UI = cmds.checkBox(label = "orientConsts+SDK Mode", v=0, 
+                                          cc= lambda state: (cmds.checkBox(blendCheckbox_UI, e=1, en=state-1)))
+    blendCheckbox_UI = cmds.checkBox(label = "blendColor Mode", v=0, 
+                                     cc= lambda state: (cmds.checkBox(constraintCheckBox_UI, e=1, en=state-1)))
 
 
     # Useful in orienting FK controllers as the user wishes. Maybe this can be improved
@@ -301,7 +297,7 @@ def showUI():
 
     # Scale the UI becase you'll never know
     scaleControllerText = cmds.text(l="FK Controllers size")
-    scaleControllerField = cmds.intField(en=10, v=5, min=1)
+    scaleField_UI = cmds.intField(en=10, v=5, min=1)
     
     separator01 = cmds.separator(h=5)
     separator02 = cmds.separator(h=5)
@@ -313,12 +309,12 @@ def showUI():
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
                         (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5), (chainMenu_UI, "right", 8),
-                        (constraintCheckBox_UI, "right", 5),
+                        (constraintCheckBox_UI, "left", 8),
                         (blendCheckbox_UI, "left", 5),
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
                         
-                        (scaleControllerField, "right", 5), (scaleControllerField, "left", 150),
+                        (scaleField_UI, "right", 5), (scaleField_UI, "left", 5),
                         (scaleControllerText, "left", 5),
                         (separator02, "left", 1), (separator02, "right", 2),
                         #--------------------
@@ -332,14 +328,16 @@ def showUI():
                     attachControl = [(constraintCheckBox_UI, "top", 5, chainMenu_UI),
                                      (blendCheckbox_UI, "top", 5, chainMenu_UI),
                                      (separator01, "top", 5, constraintCheckBox_UI),
-                                     (scaleControllerField, "top", 5, separator01),
-                                     (scaleControllerText, "top", 6, separator01),
-                                     (separator02, "top", 6, scaleControllerField),
+                                     (scaleField_UI, "top", 5, separator01),
+                                     (scaleControllerText, "top", 8, separator01),
+                                     (separator02, "top", 6, scaleField_UI),
                                      (orientControllerMenu, "top", 6, separator02)
                     
                     ],
                     
-                    #attachPosition = [(execButton, "left", 0, 26), (parent_execButton, "right", 0, 24)]
+                    attachPosition = [(constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
+                                      (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0)
+                    ]
     
     
     )
