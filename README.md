@@ -1,14 +1,5 @@
 # IK FK Builder development
 
-
-IN THIS EXPERIMENTAL BRANCH
-
-- Changed Tool in a one button exec admitting orientConst + SDK Mode as checkbox
-- Translating global vars into parameters
-
-
-
-
 TO DO List
 
 - IK complete setup
