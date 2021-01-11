@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+import maya.OpenMaya as om
 from functools import partial
 
 def duplicateChain(scaleController, chainMenu, *args):
@@ -177,30 +178,14 @@ def ikChainBuild(scaleIK, HandleName, masterIkHandle):
     
     masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + HandleName + "_ikHandle")
     cmds.setAttr(masterIkHandle[0] + ".visibility", 0)
-    """
-    pvController = cmds.curve( d=1, p=[( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                        ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                        ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                        ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                        ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                        ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                        ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                        ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                        ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                        ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                        ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                        ( 0, 0, -1)], 
-                                        k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
-    """
     
     if HandleName == "Arm": 
         #print ("scaleController", scaleField_UI)
         armIk(armIkScale=scaleIK, armikHandle=masterIkHandle)
     else:   
         #print ("scaleController", scaleField_UI)
-        legIK(ikFootScale=scaleIK, legikHandle=masterIkHandle)
+        legIK(ikFootScale=scaleIK, legikHandle=masterIkHandle, pvName=HandleName)
 
-    return masterIkHandle
 
 def armIk(armIkScale, armikHandle):
 
@@ -212,7 +197,7 @@ def armIk(armIkScale, armikHandle):
     handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
     cmds.parent(handikHandle[0], armikHandle[0])
     
-    #create IK controller
+    #create IK controller ---> CUBE
     crvIkCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1), (1, 1, 1),
                                     (-1, 1, 1), (-1, -1, 1), (-1, -1, -1),
                                     (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
@@ -234,7 +219,7 @@ def armIk(armIkScale, armikHandle):
     cmds.setAttr(sdkDriver, 1)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
 
-def legIK(ikFootScale, legikHandle):
+def legIK(ikFootScale, legikHandle, pvName):
 
     ballikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ogChain[3] + "_ik", sol="ikSCsolver", n=side + "ball_ikHandle")
     toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
@@ -257,14 +242,68 @@ def legIK(ikFootScale, legikHandle):
     cmds.xform(ikFootControl[0], ws=True, piv=piv)
 
     cmds.parent(ballikHandle[0], toeikHandle[0], legikHandle[0], ikFootControl[0])
+    
+    # Pole Vector controller ---> Sphere
+    pvController = cmds.curve(n=side + pvName + "poleVector", d=1, p=[
+                                                            ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
+                                                            ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
+                                                            ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
+                                                            ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
+                                                            ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
+                                                            ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
+                                                            ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
+                                                            ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
+                                                            ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
+                                                            ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
+                                                            ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
+                                                            ( 0, 0, -1)], 
+                                                            k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
+
+    findPoleVector(loc=pvController, targetHandle=legikHandle[0])
+    
 
     #set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
     cmds.setDrivenKeyframe(ikFootControlGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
+    cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=0, dv=0)
     cmds.setAttr(sdkDriver, 1)
     cmds.setDrivenKeyframe(ikFootControlGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
+    cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=1, dv=1)
     
+def findPoleVector(loc, targetHandle):
+
+    start = cmds.xform(ogChain[0], q=1, ws=1, t=1)
+    mid = cmds.xform(ogChain[1], q=1, ws=1, t=1)
+    end = cmds.xform(ogChain[2], q=1, ws=1, t=1)
+
+    startV = om.MVector(start[0], start[1], start[2])
+    midV = om.MVector(mid[0], mid[1], mid[2])
+    endV = om.MVector(end[0], end[1], end[2])
+
+    startEnd = endV - startV
+    startMid = midV - startV
+
+    dotP = startMid * startEnd
+    proj = float(dotP) / float(startEnd.length())
+    startEndN = startEnd.normal()
+    projV = startEndN * proj
+
+    arrowV = startMid - projV
+    arrowV*= 10 #distance from joint
+    finalV = arrowV + midV
+    
+    cmds.xform(loc, ws=1, t=(finalV.x, finalV.y ,finalV.z))
+
+    locGrp = cmds.group(em=1, n=loc + "_grp")
+
+    cmds.delete(cmds.pointConstraint(loc, locGrp))
+    cmds.parent(loc, locGrp)
+    cmds.makeIdentity(loc, a=1, t=1, r=1, s=1)
+
+    cmds.poleVectorConstraint(loc, targetHandle)
+
+
 
 def showUI():
     
@@ -287,7 +326,6 @@ def showUI():
                                           cc= lambda state: (cmds.checkBox(blendCheckbox_UI, e=1, en=state-1)))
     blendCheckbox_UI = cmds.checkBox(label = "blendColor Mode", v=0, 
                                      cc= lambda state: (cmds.checkBox(constraintCheckBox_UI, e=1, en=state-1)))
-
 
     # Useful in orienting FK controllers as the user wishes. Maybe this can be improved
     orientControllerMenu = cmds.optionMenu("UI_orientControllerMenu", l="What's the secondary axis")
