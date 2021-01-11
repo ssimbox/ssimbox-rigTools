@@ -8,6 +8,7 @@ def duplicateChain(scaleController, chainMenu, *args):
     global chainLen
     global cosoLoc
     global side
+    global controllerColor
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
@@ -22,8 +23,10 @@ def duplicateChain(scaleController, chainMenu, *args):
     
     chainMenu = cmds.optionMenu("chainMenu_UI", q=1, v=1)
 
-    if chainMenu == "Leg": 
-        chainLen = 5
+    if side == "l_": controllerColor = rgb=(0, 0, 255)
+    elif side == "r_": controllerColor = rgb=(255, 0, 0)
+
+    if chainMenu == "Leg": chainLen = 5
     else: #this is totally unscalable but for now it's ok
         chainLen = 3
 
@@ -58,7 +61,7 @@ def duplicateChain(scaleController, chainMenu, *args):
     cmds.parent(cosoLoc, cosoLocGrp)
     cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], cosoLocGrp))
     cmds.addAttr(cosoLoc, ln="FKIK_Mode", at="short", min=0, max=1, k=1, r=1)
-    cmds.move(0,0,-12, cosoLocGrp, r=1) #you must improve this shit
+    cmds.move(0,0,-12, cosoLocGrp, r=1) #IMPROVE THIS SHIT
     cmds.parentConstraint(ogChain[1], cosoLocGrp, mo=1)
     
     #remove .t, .r, .s and .v from the channelbox
@@ -70,6 +73,7 @@ def duplicateChain(scaleController, chainMenu, *args):
 
     if blendCheckbox == 1:
         blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
+    
     if constraintCheckBox == 1:
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
 
@@ -80,7 +84,7 @@ def blendNodeFunc(scaleController, selectChain, *kekkeroni):
 
         blendColorsNode = cmds.createNode("blendColors", n = ogChain[x] + "_blend")
 
-        # connect FK and IK chains into blendColors channels and then connect the output to the original joint chain
+        # Connect FK and IK chains into blendColors channels and then connect the output to the original joint chain
         cmds.connectAttr((ogChain[x] + "_ik.rotate"), blendColorsNode + ".color1")
         cmds.connectAttr((ogChain[x] + "_fk.rotate"), blendColorsNode + ".color2")
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
@@ -92,19 +96,19 @@ def blendNodeFunc(scaleController, selectChain, *kekkeroni):
 
 def constraintFunc(scaleController, selectChain, *kekkeroni):
 
-    #create some blendColors node with the same name of the joint
+    # Create some blendColors node with the same name of the joint
     for x in range(chainLen):
         
-        #setup orient constraints        
+        # Setup orient constraints        
         cmds.orientConstraint((ogChain[x] + "_ik"), ogChain[x])
         cmds.orientConstraint((ogChain[x] + "_fk"), ogChain[x])
 
-        #setup SDK naming convention
+        # Setup SDK naming convention
         sdkDriver = cosoLoc[0] + ".FKIK_Mode"
         ikSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_ikW0"
         fkSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_fkW1"
 
-        #setup SDK
+        # Setup SDK
         cmds.setAttr(sdkDriver, 0)
         cmds.setDrivenKeyframe(ikSdkDriven, cd=sdkDriver, v=0, dv=0)
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=1, dv=0)
@@ -123,11 +127,11 @@ def fkControllerCreator(fkSize, legOrArm):
     
     orientController = cmds.optionMenu("UI_orientControllerMenu", q=1, v=1)
 
-    #create controllers and group offsets
-    #change rotation, color
+    # Create controllers and group offsets
+    # Change rotation, color
     for y in range(chainLen):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
-        fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] #if not [0] it'll warn some stuff related to Maya underworld
+        fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
         
         for x in ["X", "Y", "Z"]:
             cmds.setAttr(fk_controller + ".scale" + x, fkSize)
@@ -142,12 +146,8 @@ def fkControllerCreator(fkSize, legOrArm):
         
         cmds.makeIdentity(fk_controller, a = 1, t = 1, r = 1, s = 0)
         cmds.delete(fk_controller, ch = 1)
-
-
-        if side == "l_": 
-            cmds.color(fk_controller, rgb=(0, 0, 255))
-        else:
-            cmds.color(fk_controller, rgb=(255, 0, 0))
+        
+        cmds.color(fk_controller, rgb=controllerColor)
         
         # Set SDK visibility
         sdkDriver = cosoLoc[0] + ".FKIK_Mode"
@@ -181,13 +181,13 @@ def ikChainBuild(scaleIK, HandleName, masterIkHandle):
     
     if HandleName == "Arm": 
         #print ("scaleController", scaleField_UI)
-        armIk(armIkScale=scaleIK, armikHandle=masterIkHandle)
+        armIk(armIkScale=scaleIK, armikHandle=masterIkHandle, pvName=HandleName)
     else:   
         #print ("scaleController", scaleField_UI)
         legIK(ikFootScale=scaleIK, legikHandle=masterIkHandle, pvName=HandleName)
 
 
-def armIk(armIkScale, armikHandle):
+def armIk(armIkScale, armikHandle, pvName):
 
     ikHandJoint = cmds.joint(n=side + "hand_ik")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
@@ -206,11 +206,30 @@ def armIk(armIkScale, armikHandle):
                                     k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
     crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
+
+    cmds.color(crvIkCube, rgb=controllerColor)
     
-    for x in ["X", "Y", "Z"]:
-        cmds.setAttr(crvIkCubeGrp + ".scale" + x, armIkScale)
+    for coord in ["X", "Y", "Z"]:
+        cmds.setAttr(crvIkCubeGrp + ".scale" + coord, armIkScale)
 
     cmds.parent(armikHandle[0], crvIkCube)
+
+    pvController = cmds.curve(n=side + pvName + "_PV", d=1, p=[
+                                                            ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
+                                                            ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
+                                                            ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
+                                                            ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
+                                                            ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
+                                                            ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
+                                                            ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
+                                                            ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
+                                                            ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
+                                                            ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
+                                                            ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
+                                                            ( 0, 0, -1)], 
+                                                            k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
+
+    findPoleVector(loc=pvController, targetHandle=armikHandle[0])
     
     #set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
@@ -228,14 +247,16 @@ def legIK(ikFootScale, legikHandle, pvName):
     ikFootControl = cmds.circle(n=side + "leg_anim_ik")
     ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
     
-    for x in ["X", "Y", "Z"]:
-        cmds.setAttr(ikFootControlGrp + ".scale"+x, ikFootScale)
+    for coord in ["X", "Y", "Z"]:
+        cmds.setAttr(ikFootControlGrp + ".scale" + coord, ikFootScale)
 
     cmds.rotate(90,0,0, ikFootControl)
     cmds.move(0,-3.2,0, ikFootControl, r=1)
     cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
     cmds.delete(ikFootControl[0], ch = 1)
     cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
+    
+    cmds.color(ikFootControl[0], rgb=controllerColor) 
     
     # pivot snapping on ankle joint
     piv = cmds.xform(ogChain[2], q=True, ws=True, t=True)
@@ -244,7 +265,7 @@ def legIK(ikFootScale, legikHandle, pvName):
     cmds.parent(ballikHandle[0], toeikHandle[0], legikHandle[0], ikFootControl[0])
     
     # Pole Vector controller ---> Sphere
-    pvController = cmds.curve(n=side + pvName + "poleVector", d=1, p=[
+    pvController = cmds.curve(n=side + pvName + "_PV", d=1, p=[
                                                             ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
                                                             ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
                                                             ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
@@ -260,9 +281,9 @@ def legIK(ikFootScale, legikHandle, pvName):
                                                             k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
-    
 
-    #set SDK visibility
+
+    # Set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
     cmds.setDrivenKeyframe(ikFootControlGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
@@ -272,6 +293,8 @@ def legIK(ikFootScale, legikHandle, pvName):
     cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=1, dv=1)
     
 def findPoleVector(loc, targetHandle):
+
+    # This func is kinda black magic
 
     start = cmds.xform(ogChain[0], q=1, ws=1, t=1)
     mid = cmds.xform(ogChain[1], q=1, ws=1, t=1)
@@ -300,6 +323,7 @@ def findPoleVector(loc, targetHandle):
     cmds.delete(cmds.pointConstraint(loc, locGrp))
     cmds.parent(loc, locGrp)
     cmds.makeIdentity(loc, a=1, t=1, r=1, s=1)
+    cmds.color(loc, rgb=controllerColor)
 
     cmds.poleVectorConstraint(loc, targetHandle)
 
