@@ -159,8 +159,11 @@ def fkControllerCreator(fkSize, legOrArm):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
         fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
         
+        # Set scale and lock .t and .s attributes
         for x in ["X", "Y", "Z"]:
             cmds.setAttr(fk_controller + ".scale" + x, fkSize)
+            cmds.setAttr(fk_controller + ".translate" + x, k=0, l=1)
+            cmds.setAttr(fk_controller + ".scale" + x, k=0, l=1)
             
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
@@ -287,7 +290,7 @@ def legIK(ikFootScale, legikHandle, pvName):
 
     cmds.rotate(90,0,0, ikFootControl)
     cmds.move(0,-3.2,0, ikFootControl, r=1)
-    cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
+    cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 1)
     cmds.delete(ikFootControl[0], ch = 1)
     cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
     
@@ -320,10 +323,14 @@ def legIK(ikFootScale, legikHandle, pvName):
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
     
+    # Create attributes on ikController
+    cmds.addAttr(ikFootControl[0], at="enum",enumName = "------", ln="Attributes", k=1, r=1)
+    cmds.addAttr(ikFootControl[0], ln="Twist", k=1, r=1)
+    cmds.addAttr(ikFootControl[0], ln="Lateral_Roll", k=1, r=1)
     for x in ["Ankle", "Ball", "Toe"]:
-        cmds.addAttr(ikFootControl[0], ln=x, at="short", k=1, r=1)
+        cmds.addAttr(ikFootControl[0], at="enum", enumName = "------", ln=x + "_rotations", k=1, r=1)
         for y in ["X", "Y", "Z"]:
-            cmds.addAttr(ikFootControl[0], ln=x+y, at="short", k=1, r=1)
+            cmds.addAttr(ikFootControl[0], ln=x+y, k=1, r=1)
     
     # Set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
