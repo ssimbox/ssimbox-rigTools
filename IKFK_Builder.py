@@ -60,7 +60,7 @@ def duplicateChain(scaleController, chainMenu, *args):
     cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
-    scaleController += count
+
     print ("newScale", scaleController)
     
     # Create a locator used for switching IK/FK mode and snap it between two joints
@@ -94,12 +94,13 @@ count = 0
 def addOneUnit(*args):
     global count
     count = count + 1
+    cmds.intField(scaleField_UI, v=1+count, e=1)
 
 
 def addThreeUnit(*args):
     global count
     count = count + 3
-
+    cmds.intField(scaleField_UI, v=1+count, e=1)
 
 
 def blendNodeFunc(scaleController, selectChain, *kekkeroni):
@@ -223,7 +224,6 @@ def armIk(armIkScale, armikHandle, pvName):
     cmds.parent(handikHandle[0], armikHandle[0])
     
     #create IK controller ---> CUBE
-    #createCube(nome="ciaoo_")
     crvIkCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1), (1, 1, 1),
                                     (-1, 1, 1), (-1, -1, 1), (-1, -1, -1),
                                     (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
@@ -260,13 +260,18 @@ def armIk(armIkScale, armikHandle, pvName):
                                     n=side + pvName + "_PV")
 
     findPoleVector(loc=pvController, targetHandle=armikHandle[0])
+
+    
+
     
     #set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
+    cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=0, dv=0)
     cmds.setAttr(sdkDriver, 1)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
+    cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=1, dv=1)
 
 def legIK(ikFootScale, legikHandle, pvName):
 
@@ -314,8 +319,12 @@ def legIK(ikFootScale, legikHandle, pvName):
                                     n=side + pvName + "_PV")
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
-
-
+    
+    for x in ["Ankle", "Ball", "Toe"]:
+        cmds.addAttr(ikFootControl[0], ln=x, at="short", k=1, r=1)
+        for y in ["X", "Y", "Z"]:
+            cmds.addAttr(ikFootControl[0], ln=x+y, at="short", k=1, r=1)
+    
     # Set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
@@ -394,7 +403,7 @@ def showUI():
 
     # Scale the UI becase you'll never know
     scaleControllerText = cmds.text(l="FK Controllers size")
-    scaleField_UI = cmds.intField(en=10, v=5, min=1)
+    scaleField_UI = cmds.intField(en=10, v=1, min=1)
 
     plusOne_UI = cmds.button(l="+1", c=addOneUnit)
     plusThree_UI = cmds.button(l="+3", c=addThreeUnit)
@@ -413,8 +422,8 @@ def showUI():
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
                         
-                        (scaleField_UI, "right", 5), (scaleField_UI, "left", 5),
-                        (plusOne_UI, "right", 5),
+                        (scaleField_UI, "right", 65), (scaleField_UI, "left", 5),
+                        (plusOne_UI, "right", 5), 
                         (plusThree_UI, "right", 5),
                         (scaleControllerText, "left", 5),
                         (separator02, "left", 1), (separator02, "right", 2),
@@ -438,7 +447,7 @@ def showUI():
                     ],
                     
                     attachPosition = [(constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
-                                      (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0),
+                                      (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0), #(scaleField_UI, "right",0, 40),
                                       (plusOne_UI, "right", 0, 45),
                                       (plusThree_UI, "right", 0, 49)
                     ]
