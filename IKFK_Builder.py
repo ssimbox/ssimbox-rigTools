@@ -1,11 +1,13 @@
+import importlib as asdasd
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from functools import partial
-import sys
 
 #sys.path.append("Users\ssimo\Documents\mayasimpleautorig\ctrlUI_lib.py")
 #from ctrlUI_lib import *
 #reload(ctrl)
+#import ctrlUI_lib
+#asdasd.reload(ctrlUI_lib)
 
 def duplicateChain(scaleController, chainMenu, *args):
 
@@ -58,6 +60,9 @@ def duplicateChain(scaleController, chainMenu, *args):
     cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
+    scaleController += count
+    print ("newScale", scaleController)
+    
     # Create a locator used for switching IK/FK mode and snap it between two joints
     cosoLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
     cosoLocGrp = cmds.group(em=1, n=cosoLoc[0] + "_grp")
@@ -76,11 +81,26 @@ def duplicateChain(scaleController, chainMenu, *args):
         cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
 
+    print ("Scaling-->", scaleController)
+
     if blendCheckbox == 1:
         blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
     
     if constraintCheckBox == 1:
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
+
+count = 0
+
+def addOneUnit(*args):
+    global count
+    count = count + 1
+
+
+def addThreeUnit(*args):
+    global count
+    count = count + 3
+
+
 
 def blendNodeFunc(scaleController, selectChain, *kekkeroni):
 
@@ -349,7 +369,8 @@ def showUI():
     global orientControllerMenu
     global constraintCheckBox_UI
     global blendCheckbox_UI
-    global plusOne
+    global plusOne_UI
+    global plusThree_UI
     
     if cmds.window("switchModeUI", ex = 1): cmds.deleteUI("switchModeUI")
     myWin = cmds.window("switchModeUI", t="IKFK Builder", w=300, h=300, s=1)
@@ -375,8 +396,8 @@ def showUI():
     scaleControllerText = cmds.text(l="FK Controllers size")
     scaleField_UI = cmds.intField(en=10, v=5, min=1)
 
-    plusOne = cmds.button(l="+1")
-    plusThree = cmds.button(l="+3")
+    plusOne_UI = cmds.button(l="+1", c=addOneUnit)
+    plusThree_UI = cmds.button(l="+3", c=addThreeUnit)
     
     separator01 = cmds.separator(h=5)
     separator02 = cmds.separator(h=5)
@@ -393,8 +414,8 @@ def showUI():
                         #--------------------
                         
                         (scaleField_UI, "right", 5), (scaleField_UI, "left", 5),
-                        (plusOne, "right", 5),
-                        (plusThree, "right", 5),
+                        (plusOne_UI, "right", 5),
+                        (plusThree_UI, "right", 5),
                         (scaleControllerText, "left", 5),
                         (separator02, "left", 1), (separator02, "right", 2),
                         #--------------------
@@ -409,8 +430,8 @@ def showUI():
                                      (separator01, "top", 5, constraintCheckBox_UI),
                                      (scaleField_UI, "top", 5, separator01),
                                      (scaleControllerText, "top", 8, separator01),
-                                     (plusOne, "top", 4, separator01),
-                                     (plusThree, "top", 4, separator01),
+                                     (plusOne_UI, "top", 4, separator01),
+                                     (plusThree_UI, "top", 4, separator01),
                                      (separator02, "top", 6, scaleField_UI),
                                      (orientControllerMenu, "top", 6, separator02)
                     
@@ -418,8 +439,8 @@ def showUI():
                     
                     attachPosition = [(constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
                                       (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0),
-                                      (plusOne, "right", 0, 45),
-                                      (plusThree, "right", 0, 49)
+                                      (plusOne_UI, "right", 0, 45),
+                                      (plusThree_UI, "right", 0, 49)
                     ]
     
     
