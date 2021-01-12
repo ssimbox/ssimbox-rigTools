@@ -1,6 +1,13 @@
+import importlib as asdasd
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from functools import partial
+
+#sys.path.append("Users\ssimo\Documents\mayasimpleautorig\ctrlUI_lib.py")
+#from ctrlUI_lib import *
+#reload(ctrl)
+#import ctrlUI_lib
+#asdasd.reload(ctrlUI_lib)
 
 def duplicateChain(scaleController, chainMenu, *args):
 
@@ -53,6 +60,9 @@ def duplicateChain(scaleController, chainMenu, *args):
     cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
+
+    print ("newScale", scaleController)
+    
     # Create a locator used for switching IK/FK mode and snap it between two joints
     cosoLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
     cosoLocGrp = cmds.group(em=1, n=cosoLoc[0] + "_grp")
@@ -71,11 +81,27 @@ def duplicateChain(scaleController, chainMenu, *args):
         cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
 
+    print ("Scaling-->", scaleController)
+
     if blendCheckbox == 1:
         blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
     
     if constraintCheckBox == 1:
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
+
+count = 0
+
+def addOneUnit(*args):
+    global count
+    count = count + 1
+    cmds.intField(scaleField_UI, v=1+count, e=1)
+
+
+def addThreeUnit(*args):
+    global count
+    count = count + 3
+    cmds.intField(scaleField_UI, v=1+count, e=1)
+
 
 def blendNodeFunc(scaleController, selectChain, *kekkeroni):
 
@@ -133,8 +159,11 @@ def fkControllerCreator(fkSize, legOrArm):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
         fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
         
+        # Set scale and lock .t and .s attributes
         for x in ["X", "Y", "Z"]:
             cmds.setAttr(fk_controller + ".scale" + x, fkSize)
+            cmds.setAttr(fk_controller + ".translate" + x, k=0, l=1)
+            cmds.setAttr(fk_controller + ".scale" + x, k=0, l=1)
             
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
@@ -204,6 +233,7 @@ def armIk(armIkScale, armikHandle, pvName):
                                     (1, -1, 1), (1, 1, 1), (1, 1, -1),
                                     (1, -1, -1), (1, -1, 1), (1, -1, -1), (-1, -1, -1)], 
                                     k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
+    
     crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
 
@@ -214,29 +244,37 @@ def armIk(armIkScale, armikHandle, pvName):
 
     cmds.parent(armikHandle[0], crvIkCube)
 
-    pvController = cmds.curve(n=side + pvName + "_PV", d=1, p=[
-                                                            ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                                            ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                                            ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                                            ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                                            ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                                            ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                                            ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                                            ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                                            ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                                            ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                                            ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                                            ( 0, 0, -1)], 
-                                                            k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
+    pvController = cmds.curve(d=1, p=[
+                                    ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
+                                    ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
+                                    ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
+                                    ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
+                                    ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
+                                    ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
+                                    ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
+                                    ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
+                                    ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
+                                    ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
+                                    ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
+                                    ( 0, 0, -1)], 
+                                    k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 
+                                    20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 
+                                    35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52],
+                                    n=side + pvName + "_PV")
 
     findPoleVector(loc=pvController, targetHandle=armikHandle[0])
+
+    
+
     
     #set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
+    cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=0, dv=0)
     cmds.setAttr(sdkDriver, 1)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=1, dv=1)
+    cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=1, dv=1)
 
 def legIK(ikFootScale, legikHandle, pvName):
 
@@ -252,7 +290,7 @@ def legIK(ikFootScale, legikHandle, pvName):
 
     cmds.rotate(90,0,0, ikFootControl)
     cmds.move(0,-3.2,0, ikFootControl, r=1)
-    cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 0)
+    cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 1)
     cmds.delete(ikFootControl[0], ch = 1)
     cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
     
@@ -265,24 +303,35 @@ def legIK(ikFootScale, legikHandle, pvName):
     cmds.parent(ballikHandle[0], toeikHandle[0], legikHandle[0], ikFootControl[0])
     
     # Pole Vector controller ---> Sphere
-    pvController = cmds.curve(n=side + pvName + "_PV", d=1, p=[
-                                                            ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                                            ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                                            ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                                            ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                                            ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                                            ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                                            ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                                            ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                                            ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                                            ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                                            ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                                            ( 0, 0, -1)], 
-                                                            k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52])
+    pvController = cmds.curve(d=1, p=[
+                                    ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
+                                    ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
+                                    ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
+                                    ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
+                                    ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
+                                    ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
+                                    ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
+                                    ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
+                                    ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
+                                    ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
+                                    ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
+                                    ( 0, 0, -1)], 
+                                    k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 
+                                    20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 
+                                    35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52],
+                                    n=side + pvName + "_PV")
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
-
-
+    
+    # Create attributes on ikController
+    cmds.addAttr(ikFootControl[0], at="enum",enumName = "------", ln="Attributes", k=1, r=1)
+    cmds.addAttr(ikFootControl[0], ln="Twist", k=1, r=1)
+    cmds.addAttr(ikFootControl[0], ln="Lateral_Roll", k=1, r=1)
+    for x in ["Ankle", "Ball", "Toe"]:
+        cmds.addAttr(ikFootControl[0], at="enum", enumName = "------", ln=x + "_rotations", k=1, r=1)
+        for y in ["X", "Y", "Z"]:
+            cmds.addAttr(ikFootControl[0], ln=x+y, k=1, r=1)
+    
     # Set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
@@ -336,6 +385,8 @@ def showUI():
     global orientControllerMenu
     global constraintCheckBox_UI
     global blendCheckbox_UI
+    global plusOne_UI
+    global plusThree_UI
     
     if cmds.window("switchModeUI", ex = 1): cmds.deleteUI("switchModeUI")
     myWin = cmds.window("switchModeUI", t="IKFK Builder", w=300, h=300, s=1)
@@ -359,15 +410,17 @@ def showUI():
 
     # Scale the UI becase you'll never know
     scaleControllerText = cmds.text(l="FK Controllers size")
-    scaleField_UI = cmds.intField(en=10, v=5, min=1)
+    scaleField_UI = cmds.intField(en=10, v=1, min=1)
+
+    plusOne_UI = cmds.button(l="+1", c=addOneUnit)
+    plusThree_UI = cmds.button(l="+3", c=addThreeUnit)
     
     separator01 = cmds.separator(h=5)
     separator02 = cmds.separator(h=5)
 
     #
     execButton = cmds.button(l="Duplicate Chain", c=partial(duplicateChain, blendNodeFunc, constraintFunc))
-    #parent_execButton = cmds.button(l="Constraint + SDK Mode", c=duplicateChain)
-    
+
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
                         (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5), (chainMenu_UI, "right", 8),
@@ -376,7 +429,9 @@ def showUI():
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
                         
-                        (scaleField_UI, "right", 5), (scaleField_UI, "left", 5),
+                        (scaleField_UI, "right", 65), (scaleField_UI, "left", 5),
+                        (plusOne_UI, "right", 5), 
+                        (plusThree_UI, "right", 5),
                         (scaleControllerText, "left", 5),
                         (separator02, "left", 1), (separator02, "right", 2),
                         #--------------------
@@ -385,20 +440,23 @@ def showUI():
                         #--------------------
                         
                         (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
-                        #(parent_execButton, "bottom", 5), (parent_execButton, "left", 5), (parent_execButton, "right", 5)
                     ],
                     attachControl = [(constraintCheckBox_UI, "top", 5, chainMenu_UI),
                                      (blendCheckbox_UI, "top", 5, chainMenu_UI),
                                      (separator01, "top", 5, constraintCheckBox_UI),
                                      (scaleField_UI, "top", 5, separator01),
                                      (scaleControllerText, "top", 8, separator01),
+                                     (plusOne_UI, "top", 4, separator01),
+                                     (plusThree_UI, "top", 4, separator01),
                                      (separator02, "top", 6, scaleField_UI),
                                      (orientControllerMenu, "top", 6, separator02)
                     
                     ],
                     
                     attachPosition = [(constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
-                                      (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0)
+                                      (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0), #(scaleField_UI, "right",0, 40),
+                                      (plusOne_UI, "right", 0, 45),
+                                      (plusThree_UI, "right", 0, 49)
                     ]
     
     
