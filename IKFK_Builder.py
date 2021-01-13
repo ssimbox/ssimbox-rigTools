@@ -159,11 +159,9 @@ def fkControllerCreator(fkSize, legOrArm):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
         fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
         
-        # Set scale and lock .t and .s attributes
+        # Set scale 
         for x in ["X", "Y", "Z"]:
             cmds.setAttr(fk_controller + ".scale" + x, fkSize)
-            cmds.setAttr(fk_controller + ".translate" + x, k=0, l=1)
-            cmds.setAttr(fk_controller + ".scale" + x, k=0, l=1)
             
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
@@ -185,6 +183,11 @@ def fkControllerCreator(fkSize, legOrArm):
         cmds.setAttr(sdkDriver, 0)
         cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
 
+        # Lock .t and .s attributes
+        for x in ["X", "Y", "Z"]:
+            cmds.setAttr(fk_controller + ".translate" + x, k=0, l=1)
+            cmds.setAttr(fk_controller + ".scale" + x, k=0, l=1)
+
     # Create ordered hierarchy
     for x in reversed(range(chainLen)):
         if x == 0:
@@ -201,7 +204,6 @@ def fkControllerCreator(fkSize, legOrArm):
                 cmds.delete(ogChain[chainLen-1] + "_anim_grp")
         else:
             pass
-    
 
 def ikChainBuild(scaleIK, HandleName, masterIkHandle):
     
@@ -264,9 +266,28 @@ def armIk(armIkScale, armikHandle, pvName):
 
     findPoleVector(loc=pvController, targetHandle=armikHandle[0])
 
+    cmds.addAttr(pvController, at="enum", enumName = "------", ln="Attributes", k=1, r=1)
+    cmds.addAttr(pvController, ln="Follow", k=1, r=1, min=0, max=1)
+    cmds.addAttr(pvController, ln="Follow_Clav_Hand", k=1, r=1, min=0, max=1, dv=0.5)
+    adjustLoc = cmds.spaceLocator(n=pvController + "_adjust")
+    cmds.parentConstraint(ogChain[0] + "_ik", ogChain[1] + "_ik", ogChain[2] + "_ik", adjustLoc)
+    #cmds.pointConstraint(adjustLoc, pvController + "_grp", mo=1)
     
+    driver = pvController + ".Follow_Clav_Hand"
+    #driven = str(pvController) + "_adjust_parentConstraint1." + ogChain[x] + "W" + str(x)
+    cmds.setAttr(driver, 0)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[0] + "_ikW0", cd=driver, v=1, dv=0)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[1] + "_ikW1", cd=driver, v=0, dv=0)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[2] + "_ikW2", cd=driver, v=0, dv=0)
+    cmds.setAttr(driver, 1)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[0] + "_ikW0", cd=driver, v=0, dv=1)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[1] + "_ikW1", cd=driver, v=0, dv=1)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[2] + "_ikW2", cd=driver, v=1, dv=1)
+    cmds.setAttr(driver, 0.5)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[0] + "_ikW0", cd=driver, v=0, dv=0.5)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[1] + "_ikW1", cd=driver, v=1, dv=0.5)
+    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[2] + "_ikW2", cd=driver, v=0, dv=0.5)
 
-    
     #set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
@@ -302,6 +323,7 @@ def legIK(ikFootScale, legikHandle, pvName):
 
     cmds.parent(ballikHandle[0], toeikHandle[0], legikHandle[0], ikFootControl[0])
     
+    #---------- Making Pole Vector -------------#
     # Pole Vector controller ---> Sphere
     pvController = cmds.curve(d=1, p=[
                                     ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
@@ -322,6 +344,9 @@ def legIK(ikFootScale, legikHandle, pvName):
                                     n=side + pvName + "_PV")
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
+
+    cmds.addAttr(pvController, ln="Follow", k=1, r=1, min=0, max=1)
+    cmds.addAttr(pvController, ln="Follow_Leg_Foot", k=1, r=1, min=0, max=1, dv=0.5)
     
     # Create attributes on ikController
     cmds.addAttr(ikFootControl[0], at="enum",enumName = "------", ln="Attributes", k=1, r=1)
