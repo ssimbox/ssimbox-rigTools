@@ -269,25 +269,7 @@ def armIk(armIkScale, armikHandle, pvName):
     cmds.addAttr(pvController, at="enum", enumName = "------", ln="Attributes", k=1, r=1)
     cmds.addAttr(pvController, ln="Follow", k=1, r=1, min=0, max=1)
     cmds.addAttr(pvController, ln="Follow_Clav_Hand", k=1, r=1, min=0, max=1, dv=0.5)
-    adjustLoc = cmds.spaceLocator(n=pvController + "_adjust")
-    cmds.parentConstraint(ogChain[0] + "_ik", ogChain[1] + "_ik", ogChain[2] + "_ik", adjustLoc)
-    #cmds.pointConstraint(adjustLoc, pvController + "_grp", mo=1)
     
-    driver = pvController + ".Follow_Clav_Hand"
-    #driven = str(pvController) + "_adjust_parentConstraint1." + ogChain[x] + "W" + str(x)
-    cmds.setAttr(driver, 0)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[0] + "_ikW0", cd=driver, v=1, dv=0)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[1] + "_ikW1", cd=driver, v=0, dv=0)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[2] + "_ikW2", cd=driver, v=0, dv=0)
-    cmds.setAttr(driver, 1)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[0] + "_ikW0", cd=driver, v=0, dv=1)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[1] + "_ikW1", cd=driver, v=0, dv=1)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[2] + "_ikW2", cd=driver, v=1, dv=1)
-    cmds.setAttr(driver, 0.5)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[0] + "_ikW0", cd=driver, v=0, dv=0.5)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[1] + "_ikW1", cd=driver, v=1, dv=0.5)
-    cmds.setDrivenKeyframe(pvController + "_adjust_parentConstraint1." + ogChain[2] + "_ikW2", cd=driver, v=0, dv=0.5)
-
     #set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
@@ -303,25 +285,31 @@ def legIK(ikFootScale, legikHandle, pvName):
     toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
     
     # Create and place ik controller
-    ikFootControl = cmds.circle(n=side + "leg_anim_ik")
-    ikFootControlGrp = cmds.group(n=ikFootControl[0] + "_grp")
+    #ikFootControl = cmds.circle(n=side + "leg_anim_ik")
+    ikFootControl = cmds.curve(d=2, p=[(0.784, 0, 0.784), (0, 0, 1.108), (-0.784,0,0.784), (-1.108, 0, 0), (-0.784, 0,-2.183),
+              (0, 0,-2.508), (0.784, 0, -2.183), (1.108, 0, 0), (0.784, 0, 0.784), (0, 0, 1.108)
+              ],
+              k=[0,1,2,3,4,5,6,7,8,9,10], n=side + "leg_anim_ik")
+    #cmds.rotate(0,90,0, ikFootControl)
+    ikFootControlGrp = cmds.group(em=1, n=ikFootControl + "_grp")
+    cmds.parent(ikFootControl, ikFootControlGrp)
     
     for coord in ["X", "Y", "Z"]:
         cmds.setAttr(ikFootControlGrp + ".scale" + coord, ikFootScale)
 
-    cmds.rotate(90,0,0, ikFootControl)
+    #cmds.rotate(90,0,0, ikFootControl)
     cmds.move(0,-3.2,0, ikFootControl, r=1)
     cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 1)
-    cmds.delete(ikFootControl[0], ch = 1)
+    cmds.delete(ikFootControl, ch = 1)
     cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
     
-    cmds.color(ikFootControl[0], rgb=controllerColor) 
+    cmds.color(ikFootControl, rgb=controllerColor) 
     
     # pivot snapping on ankle joint
     piv = cmds.xform(ogChain[2], q=True, ws=True, t=True)
-    cmds.xform(ikFootControl[0], ws=True, piv=piv)
+    cmds.xform(ikFootControl, ws=True, piv=piv)
 
-    cmds.parent(ballikHandle[0], toeikHandle[0], legikHandle[0], ikFootControl[0])
+    cmds.parent(ballikHandle[0], toeikHandle[0], legikHandle[0], ikFootControl)
     
     #---------- Making Pole Vector -------------#
     # Pole Vector controller ---> Sphere
@@ -349,13 +337,13 @@ def legIK(ikFootScale, legikHandle, pvName):
     cmds.addAttr(pvController, ln="Follow_Leg_Foot", k=1, r=1, min=0, max=1, dv=0.5)
     
     # Create attributes on ikController
-    cmds.addAttr(ikFootControl[0], at="enum",enumName = "------", ln="Attributes", k=1, r=1)
-    cmds.addAttr(ikFootControl[0], ln="Twist", k=1, r=1)
-    cmds.addAttr(ikFootControl[0], ln="Lateral_Roll", k=1, r=1)
+    cmds.addAttr(ikFootControl, at="enum",enumName = "------", ln="Attributes", k=1, r=1)
+    cmds.addAttr(ikFootControl, ln="Twist", k=1, r=1)
+    cmds.addAttr(ikFootControl, ln="Lateral_Roll", k=1, r=1)
     for x in ["Ankle", "Ball", "Toe"]:
-        cmds.addAttr(ikFootControl[0], at="enum", enumName = "------", ln=x + "_rotations", k=1, r=1)
+        cmds.addAttr(ikFootControl, at="enum", enumName = "------", ln=x + "_rotations", k=1, r=1)
         for y in ["X", "Y", "Z"]:
-            cmds.addAttr(ikFootControl[0], ln=x+y, k=1, r=1)
+            cmds.addAttr(ikFootControl, ln=x+y, k=1, r=1)
     
     # Set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"
