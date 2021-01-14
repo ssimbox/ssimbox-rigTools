@@ -1,13 +1,6 @@
-import importlib as asdasd
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from functools import partial
-
-#sys.path.append("Users\ssimo\Documents\mayasimpleautorig\ctrlUI_lib.py")
-#from ctrlUI_lib import *
-#reload(ctrl)
-#import ctrlUI_lib
-#asdasd.reload(ctrlUI_lib)
 
 def duplicateChain(scaleController, chainMenu, *args):
 
@@ -229,11 +222,11 @@ def armIk(armIkScale, armikHandle, pvName):
     cmds.parent(handikHandle[0], armikHandle[0])
     
     #create IK controller ---> CUBE
-    crvIkCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1), (1, 1, 1),
-                                    (-1, 1, 1), (-1, -1, 1), (-1, -1, -1),
-                                    (-1, 1, -1), (-1, 1, 1), (-1, -1, 1),
-                                    (1, -1, 1), (1, 1, 1), (1, 1, -1),
-                                    (1, -1, -1), (1, -1, 1), (1, -1, -1), (-1, -1, -1)], 
+    crvIkCube = cmds.curve(d=1, p=[(-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (0.5, 0.5, 0.5),
+                                    (-0.5, 0.5, 0.5), (-0.5, -0.5, 0.5), (-0.5, -0.5, -0.5),
+                                    (-0.5, 0.5, -0.5), (-0.5, 0.5, 0.5), (-0.5, -0.5, 0.5),
+                                    (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (0.5, 0.5, -0.5),
+                                    (0.5, -0.5, -0.5), (0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, -0.5, -0.5)], 
                                     k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
     
     crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
@@ -285,24 +278,22 @@ def legIK(ikFootScale, legikHandle, pvName):
     toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
     
     # Create and place ik controller
-    #ikFootControl = cmds.circle(n=side + "leg_anim_ik")
-    ikFootControl = cmds.curve(d=2, p=[(0.784, 0, 0.784), (0, 0, 1.108), (-0.784,0,0.784), (-1.108, 0, 0), (-0.784, 0,-2.183),
-              (0, 0,-2.508), (0.784, 0, -2.183), (1.108, 0, 0), (0.784, 0, 0.784), (0, 0, 1.108)
+    # 
+    ikFootControl = cmds.curve(d=2, p=[(0.997, 0, 1.789), (0, 0, 2.39), (-0.997,0,1.789), (-1.108, 0, 0), (-0.784, 0,-2.5),
+              (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)
               ],
               k=[0,1,2,3,4,5,6,7,8,9,10], n=side + "leg_anim_ik")
-    #cmds.rotate(0,90,0, ikFootControl)
     ikFootControlGrp = cmds.group(em=1, n=ikFootControl + "_grp")
     cmds.parent(ikFootControl, ikFootControlGrp)
     
+    # Set Size, freeze transform, create offset group and color
     for coord in ["X", "Y", "Z"]:
         cmds.setAttr(ikFootControlGrp + ".scale" + coord, ikFootScale)
-
-    #cmds.rotate(90,0,0, ikFootControl)
+        
     cmds.move(0,-3.2,0, ikFootControl, r=1)
     cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 1)
     cmds.delete(ikFootControl, ch = 1)
     cmds.delete(cmds.pointConstraint(ogChain[3] + "_ik", ikFootControlGrp))
-    
     cmds.color(ikFootControl, rgb=controllerColor) 
     
     # pivot snapping on ankle joint
@@ -357,7 +348,6 @@ def legIK(ikFootScale, legikHandle, pvName):
 def findPoleVector(loc, targetHandle):
 
     # This func is kinda black magic
-
     start = cmds.xform(ogChain[0], q=1, ws=1, t=1)
     mid = cmds.xform(ogChain[1], q=1, ws=1, t=1)
     end = cmds.xform(ogChain[2], q=1, ws=1, t=1)
