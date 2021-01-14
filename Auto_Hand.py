@@ -17,7 +17,7 @@ def duplicateHandChain(*args):
 
     fingerChainLength = cmds.intField(fingersCountField, q=1, v=1) #number of joints in a single finger
     supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, value = True) 
-    attributeController = cmds.textField(controllerField, q = True, text=True)
+    #attributeController = cmds.textField(controllerField, q = True, text=True)
     
 
     newListName = ["_rig"]
@@ -125,6 +125,24 @@ def duplicateHandChain(*args):
             continue
         numbers.append(i) 
     
+
+    attributeController = cmds.curve(d=1, p=[(61.39684755277148, 107.09833137762485, -7.9134744587261885),
+                        (60.5014727013448, 104.69149073583574, -8.160753622601991),
+                        (60.03541386899886, 104.04189931682629, -0.15053410167191128),
+                        (58.365730593592026, 106.22898674786727, -0.07031874821935569),
+                        (58.831789425937956, 106.87857816687672, -8.080538269149434),
+                        (60.5014727013448, 104.69149073583574, -8.160753622601991),
+                        (61.39684755277148, 107.09833137762485, -7.9134744587261885),
+                        (58.831789425937956, 106.87857816687672, -8.080538269149434),
+                        (58.365730593592026, 106.22898674786727, -0.07031874821935569),
+                        (60.93078872042556, 106.44873995861535, 0.09674506220389012),
+                        (60.03541386899886, 104.04189931682629, -0.15053410167191128),
+                        (60.93078872042556, 106.44873995861535, 0.09674506220389012),
+                        (61.39684755277148, 107.09833137762485, -7.9134744587261885)],
+                            k=[0,1,2,3,4,5,6,7,8,9,10,11,12]
+)
+
+
     cmds.addAttr(attributeController, ln = "Fingers_Shorcuts", k = 1, r = 1, s = 1, at = "enum", en = "------")
     cmds.addAttr(attributeController, ln = "Fist", k = 1, r = 1, s = 1, at = "float")
     cmds.addAttr(attributeController, ln = "Spread", k = 1, r = 1, s = 1, at = "float")
@@ -174,7 +192,7 @@ def controllerAttributes(*args):
 
     nurbsSelection = cmds.ls(sl=1)
     #print nurbsSelection
-    controllerFieldText = cmds.textField(controllerField, edit = 1, text = nurbsSelection[0])
+    cmds.textField(controllerField, edit = 1, text = nurbsSelection[0])
 
 def showUI():
     global fingersCountField
@@ -186,83 +204,69 @@ def showUI():
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
     
     myWin = cmds.window("HandUI", title="Hand script")
-    #mainLayout = cmds.formLayout(nd = 100)
-    mainLayout = cmds.rowColumnLayout(nc=3)
+    mainLayout = cmds.formLayout(nd = 100)
+    #mainLayout = cmds.rowColumnLayout(nc=3)
 
     # Input field for finger length
-    cmds.text(l="")
-    cmds.text(l="")
-    cmds.text(l="")
+    
     txtFingersChain = cmds.text("Joint per finger")
     fingersCountField = cmds.intField(minValue=3, w = 20)
     
     # Checkbox 
-    fingersCheckBox = cmds.checkBox(label = "Support", value = False)
+    fingersCheckBox = cmds.checkBox(label = "Support joint?", value = False)
 
-    cmds.text(l="")
-    cmds.text(l="")
-    cmds.text(l="")
     
     # Input field for attribute controller
-    cmds.text(l="Controller")
+    controllerText = cmds.text(l="Controller")
     controllerField = cmds.textField(en=0)
-    controllerButton = cmds.button(label="<<<", w=20, c=controllerAttributes)
-
-    cmds.text(l="")
-    cmds.text(l="")
-    cmds.text(l="")
+    controllerButton = cmds.button(label="<<<", w=55, h=22, c=controllerAttributes)
 
     # create an optionMenu for fingers bending 
-    cmds.separator()
     axisMenu = cmds.optionMenu("axisMenu", l = "Bending Axis") 
     cmds.menuItem(l="X")
     cmds.menuItem(l="Y")
     cmds.menuItem(l="Z")
-    cmds.separator()
+    
+    # Separat
+    separator01 = cmds.separator(h=5)
+    separator02 = cmds.separator(h=5)
     
     # Button to execute
-    cmds.text(l="")
-    cmds.text(l="")
-    cmds.text(l="")
-    cmds.text(l="")
+    
     execButton = cmds.button(label="Duplicate hand chain", command=duplicateHandChain)
+  
     
-    
-    
-    """
-    formlayout test
+    #formlayout test
     cmds.formLayout(mainLayout, e=1,
-                    attachForm = [(txtFingersChain, "top", 8),
-                                  (fingersCountField, "top", 5), (fingersCountField, "right", 5), (fingersCountField, "left", 10),
-                                  (controllerField, "right", 30), (controllerField, "left", 70),
-                                  (execButton, "bottom", 10), (execButton, "right", 10), (execButton, "left", 10),
+                    attachForm = [(txtFingersChain, "top", 8),(txtFingersChain, "left", 5),
+                                  (fingersCountField, "top", 6), (fingersCountField, "right", 115), (fingersCountField, "left", 90),
+                                  (fingersCheckBox, "top", 8), (fingersCheckBox, "right", 5),
                                   (separator01, "left", 5), (separator01, "right", 5),
+                                  #---------------------
                                   (separator02, "left", 5), (separator02, "right", 5),
-                                  (separator03, "left", 5), (separator03, "right", 5),
-                                  (controllerButton, "left", 5),
-                                  (axisMenu, "left", 10)
+                                  (controllerText, "left", 5),
+                                  (controllerField, "right", 70), (controllerField, "left", 70),
+                                  (controllerButton, "right", 5),
+                                  (axisMenu, "left", 10),
+                                  #----------------------
+                                  (execButton, "bottom", 10), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
 
                     attachControl = [(separator01, "top", 5, fingersCountField),
-                                     (fingersCheckBox, "top", 10, separator01),
-                                     (separator02, "top", 10, fingersCheckBox),
-                                     (axisMenu, "top", 5, separator02),
-                                     (separator03, "top", 5, axisMenu),
-                                     (controllerField, "top", 5, separator03),
-                                     (controllerButton, "top", 5, separator03),
+                                     (separator01, "top", 10, fingersCheckBox),
+                                     (axisMenu, "top", 5, separator01),
+                                     (separator02, "top", 5, axisMenu),
+                                     (controllerField, "top", 5, separator02),
+                                     (controllerButton, "top", 5, separator02),
+                                     (controllerText, "top", 7, separator02)
                                     ],
                     
-                    attachPosition = [(txtFingersChain, "left", 0, 5),
-                                      (fingersCountField, "left", 0, 40),
-                                      (fingersCheckBox, "left", 0, 30 ),
-                                      (controllerField, "right", 0, 99),
-                                      (controllerButton, "right", 50, 0)
-                                      #(txtFingersController, "left", 0, 0),
+                    attachPosition = [(axisMenu, "left", 100, 0)
                                       
                                      ]
     
                     )
-    """
+   
     cmds.showWindow(myWin)
 
 showUI()
