@@ -149,8 +149,8 @@ def fkControllerCreator(fkSize, legOrArm):
     # Create controllers and group offsets
     # Change rotation, color
     for y in range(chainLen):
-        anim_group = cmds.group(em=1, n=ogChain[y] + "_anim_grp")
-        fk_controller = cmds.circle(n=ogChain[y] + "_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
+        anim_group = cmds.group(em=1, n=ogChain[y] + "_fk_anim_grp")
+        fk_controller = cmds.circle(n=ogChain[y] + "_fk_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
         
         # Set scale 
         for x in ["X", "Y", "Z"]:
@@ -172,9 +172,9 @@ def fkControllerCreator(fkSize, legOrArm):
         # Set SDK visibility
         sdkDriver = cosoLoc[0] + ".FKIK_Mode"
         cmds.setAttr(sdkDriver, 1)
-        cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=1, dv=0)
+        cmds.setDrivenKeyframe(ogChain[0] + "_fk_anim_grp.visibility", cd=sdkDriver, v=1, dv=0)
         cmds.setAttr(sdkDriver, 0)
-        cmds.setDrivenKeyframe(ogChain[0] + "_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
+        cmds.setDrivenKeyframe(ogChain[0] + "_fk_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
 
         # Lock .t and .s attributes
         for x in ["X", "Y", "Z"]:
@@ -185,16 +185,16 @@ def fkControllerCreator(fkSize, legOrArm):
     for x in reversed(range(chainLen)):
         if x == 0:
             continue
-        cmds.parent(ogChain[x] + "_anim_grp", ogChain[x-1] + "_anim")
+        cmds.parent(ogChain[x] + "_fk_anim_grp", ogChain[x-1] + "_fk_anim")
 
     
     # Orient Constraint _anim controllers with _fk hierarchy
     for x in range(chainLen):
-        cmds.orientConstraint(ogChain[x] + "_anim", ogChain[x] + "_fk")
+        cmds.orientConstraint(ogChain[x] + "_fk_anim", ogChain[x] + "_fk")
         # If leg chain is selected delete toe controller, else not
         if legOrArm == "Leg":
             if x == (chainLen-1):
-                cmds.delete(ogChain[chainLen-1] + "_anim_grp")
+                cmds.delete(ogChain[chainLen-1] + "_fk_anim_grp")
         else:
             pass
 
