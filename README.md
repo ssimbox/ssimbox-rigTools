@@ -12,6 +12,8 @@ Suffixes are ok but I need a this kind of prefix.
 
 
 # IKFK-Builder
+
+![Alt Text](https://media.giphy.com/media/BDxMm81ZswjiJUOAPp/giphy.gif)
 ## Features
 
 Oh well, you know...
