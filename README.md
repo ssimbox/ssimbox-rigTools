@@ -14,7 +14,7 @@ Suffixes are ok but I need a this kind of prefix.
 # IKFK-Builder
 ## Features
 
-Oh well, you know...simple stuff
+Oh well, you know...
 
 * Support arm and leg chains.
     * Arm = 3 joint length
@@ -22,24 +22,30 @@ Oh well, you know...simple stuff
 * Create an _ik chain and _fk chain using, by your choice, blendColors node connections or orientConstraint + Set Driven Key
 * Create fk controllers and ik-handles for legs and arms
 
-## TODO list
+## To-Do list
 
 Lots of stuff
 
+* Better foot attributes
 * Clavicle support
-* Tweak about pole vectors
-* Complex leg and arm chain 
+* Tweaks about pole vectors
+* More complex leg and arm chains
 * Add Squash and Stretch option
 * Color choice (by your own)
 * Better controllers
+* Auto hierarchy in outliner
 
 
 # AutoHand
 ## Features 
 
-* Duplicate hand chain
+For now very simple stuff but it could be very useful to create an usable hand with fingers control.
+
+* Various length fingers
 * Fingers controller creation with attributes to control them
 
-## TODO list
+## To-Do list
 
 * IK Hand - Actually it started all for this, to create automatically an IK Hand. This is my main goal
+* Various hand builds - My objective was to build the human hand (five fingers) but could be useful have three, four or six fingers.
+

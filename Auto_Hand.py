@@ -38,10 +38,8 @@ def duplicateHandChain(*args):
             handLocators = completeHierarchy[newLOC] + nameLOC
             cmds.spaceLocator(n = handLocators)
             cmds.matchTransform(handLocators, completeHierarchy[newLOC])
-            cmds.makeIdentity(handLocators, a = 0, t = 0, r = 0, s = 0)
+            cmds.makeIdentity(handLocators, a = 1, t = 0, r = 0, s = 0)
             cmds.setAttr(handLocators + ".scale", 0.1, 0.1, 0.1)
-            
-            #ikJointFingers = cmds.joint(n=str(completeHierarchy[newLOC]) + "_IK_start", radius = 0.1)
 
 
     # Create group offsets for locators and parent it
@@ -52,11 +50,6 @@ def duplicateHandChain(*args):
         cmds.matchTransform(driver_group, completeHierarchy[x])
         cmds.parent(driver_group, anim_group)
         cmds.parent(completeHierarchy[x] + "_LOC", driver_group)
-        #if x == 0:
-        #    cmds.rename(anim_group, "ciao")
-        
-            
-    #cmds.rename(anim_group[0])
 
     # Order locators & groups hierarchy like in top-down style
     for x in reversed(range(handJointCount)): 
@@ -70,7 +63,6 @@ def duplicateHandChain(*args):
         
 
     # order the _RIG hierarchy with locators
-
     if supportJointCheckbox == 1:
         hierarchyOrder = 2 # if supportJoint exists, start the count from 2
     else:
@@ -78,7 +70,6 @@ def duplicateHandChain(*args):
     hierarchyOrder += fingerChainLength 
 
     # Hierarchy printed is in a top-down hierarchy so it's important parent all under hand
-
     for x in range(handJointCount):
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
@@ -154,6 +145,8 @@ def duplicateHandChain(*args):
         cmds.setAttr(attributeController + ".scale" + coord, k=0, l=1)
         cmds.setAttr(attributeController + ".visibility", k=0, l=1)
         cmds.scale(0.5,0.5,0.5, attributeControllerGrp)
+    
+    # Set controller spacing based on chain side
     if jointSide == "l_":
         cmds.rotate(0,0,-30,attributeControllerGrp, r=1)
         cmds.move(6,0,0, attributeControllerGrp, r=1)
@@ -163,15 +156,16 @@ def duplicateHandChain(*args):
 
     cmds.parentConstraint(completeHierarchy[0], attributeControllerGrp, mo=1)
 
+    # Create attributes
     cmds.addAttr(attributeController, ln = "Fingers_Shorcuts", k = 1, r = 1, s = 1, at = "enum", en = "------")
     cmds.addAttr(attributeController, ln = "Fist", k = 1, r = 1, s = 1, at = "float")
     cmds.addAttr(attributeController, ln = "Spread", k = 1, r = 1, s = 1, at = "float")
     
     for singleFinger in fingers:
 
-        cmds.addAttr(attributeController, longName = singleFinger, keyable=True, readable = True, 
+        cmds.addAttr(attributeController, longName = singleFinger, k=True, readable = True, 
                         storable = True, attributeType = "enum", enumName = "------")
-        cmds.setAttr(attributeController + "." + singleFinger, keyable = False, channelBox = 1)
+        cmds.setAttr(attributeController + "." + singleFinger, k=False, channelBox = 1)
         for n in numbers:
             for coord in xyz: # Three ctrlAnims only for testing hehehehe
                 ctrlAnims =  jointSide + singleFinger + str(n) + "_LOC.rotate"
@@ -180,9 +174,9 @@ def duplicateHandChain(*args):
                 cmds.addAttr(attributeController, longName = allNewAttr, hidden = False, k = True, r = True, s = True)
                 cmds.connectAttr(( attributeController + "." + allNewAttr), (ctrlAnims + coord ))
 
-    # Delete some attributes based on the bending axis
     selectAxis = cmds.optionMenu("axisMenu", q = 1, v = 1) 
 
+    # Delete some attributes based on the bending axis
     for removeFinger in fingers:
         for removeNumber in numbers[1:]:
 

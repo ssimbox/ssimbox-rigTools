@@ -74,7 +74,7 @@ def duplicateChain(scaleController, chainMenu, *args):
         cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
     cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
 
-    print ("Scaling-->", scaleController)
+    #print ("Scaling-->", scaleController)
 
     if blendCheckbox == 1:
         blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
@@ -153,20 +153,20 @@ def fkControllerCreator(fkSize, legOrArm):
         fk_controller = cmds.circle(n=ogChain[y] + "_fk_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
         
         # Set scale 
-        for x in ["X", "Y", "Z"]:
-            cmds.setAttr(fk_controller + ".scale" + x, fkSize)
+        cmds.scale(fkSize, fkSize, fkSize, fk_controller)
             
         cmds.matchTransform(anim_group, ogChain[y])
         cmds.delete(cmds.parentConstraint(ogChain[y], fk_controller))
         cmds.parent(fk_controller, anim_group)
 
+        # Set controller orientation based on second axis 
         if orientController == "x": cmds.rotate(90,0,0, fk_controller)
         if orientController == "y": cmds.rotate(0,90,0, fk_controller)
         if orientController == "z": cmds.rotate(0,0,90, fk_controller)
         
+        # Freeze transform, delete history and set color
         cmds.makeIdentity(fk_controller, a = 1, t = 1, r = 1, s = 0)
         cmds.delete(fk_controller, ch = 1)
-        
         cmds.color(fk_controller, rgb=controllerColor)
         
         # Set SDK visibility
@@ -188,7 +188,7 @@ def fkControllerCreator(fkSize, legOrArm):
         cmds.parent(ogChain[x] + "_fk_anim_grp", ogChain[x-1] + "_fk_anim")
 
     
-    # Orient Constraint _anim controllers with _fk hierarchy
+    # Set orientConstraint _anim controllers with _fk hierarchy
     for x in range(chainLen):
         cmds.orientConstraint(ogChain[x] + "_fk_anim", ogChain[x] + "_fk")
         # If leg chain is selected delete toe controller, else not
@@ -233,9 +233,7 @@ def armIk(armIkScale, armikHandle, pvName):
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
 
     cmds.color(crvIkCube, rgb=controllerColor)
-    
-    for coord in ["X", "Y", "Z"]:
-        cmds.setAttr(crvIkCubeGrp + ".scale" + coord, armIkScale)
+    cmds.scale(armIkScale, armIkScale, armIkScale, crvIkCubeGrp)
 
     cmds.parent(armikHandle[0], crvIkCube)
 
@@ -286,10 +284,8 @@ def legIK(ikFootScale, legikHandle, pvName):
     ikFootControlGrp = cmds.group(em=1, n=ikFootControl + "_grp")
     cmds.parent(ikFootControl, ikFootControlGrp)
     
-    # Set Size, freeze transform, create offset group and color
-    for coord in ["X", "Y", "Z"]:
-        cmds.setAttr(ikFootControlGrp + ".scale" + coord, ikFootScale)
-        
+    # Set size, freeze transform, create offset group and color
+    cmds.scale(ikFootScale, ikFootScale, ikFootScale, ikFootControlGrp)  
     cmds.move(0,-3.2,0, ikFootControl, r=1)
     cmds.makeIdentity(ikFootControl, a = 1, t = 1, r = 1, s = 1)
     cmds.delete(ikFootControl, ch = 1)
@@ -331,10 +327,10 @@ def legIK(ikFootScale, legikHandle, pvName):
     cmds.addAttr(ikFootControl, at="enum",enumName = "------", ln="Attributes", k=1, r=1)
     cmds.addAttr(ikFootControl, ln="Twist", k=1, r=1)
     cmds.addAttr(ikFootControl, ln="Lateral_Roll", k=1, r=1)
-    for x in ["Ankle", "Ball", "Toe"]:
-        cmds.addAttr(ikFootControl, at="enum", enumName = "------", ln=x + "_rotations", k=1, r=1)
-        for y in ["X", "Y", "Z"]:
-            cmds.addAttr(ikFootControl, ln=x+y, k=1, r=1)
+    for bone in ["Ankle", "Ball", "Toe_Tap"]:
+        cmds.addAttr(ikFootControl, at="enum", enumName = "------", ln=bone, k=1, r=1)
+        for coord in ["X", "Y", "Z"]:
+            cmds.addAttr(ikFootControl, ln=bone+coord, k=1, r=1)
     
     # Set SDK visibility
     sdkDriver = cosoLoc[0] + ".FKIK_Mode"

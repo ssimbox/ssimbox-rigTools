@@ -1,5 +1,10 @@
 import maya.cmds as cmds
 
+
+# This is the controller library where I save curves' coordinates I make
+# One day I'll import curves from this file 
+
+
 # Cube form
 def createCube(nome):
     crvCube = cmds.curve(d=1, p=[(-1, 1, -1), (1, 1, -1),
