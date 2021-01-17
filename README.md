@@ -1,27 +1,28 @@
-# IK FK Builder development
+# sbx-autorig
+Welcome to my repo, first in my life.
 
-13/01
-Tempo branch
-- Added useless SDK. Need PV change
+I'm currently working on controllers and relationships maker of my own rigs and I would like to share my entire work, free for all.
+Actually I developed a simple IKFK-builder for legs and arms and an auto hand maker (I really hate make fingers rigs, really boriiiing)
 
-11/01/2021
-- Added PV constraint with a script seen here https://vimeo.com/66015036
+This is just a start, I want to build always better tools to help my own works and, hopefully, speed up yours
+
+Actually there a simple rule to remember using my tools **naming convention**. 
+I use this type of joint naming: *side_jointName* ---> *l_upperleg* or *r_knee*
+Suffixes are ok but I need a this kind of prefix.
 
 
-10/01/2021
-- Some changes from global var to params
-- Improving naming and some cycles
-- Added new func on checkboxes
-- No execution if no checkbox selected
+## Features - IKFK-Builder
 
-TO DO List
+Oh well, you know...simple stuff
 
-- IK complete setup
-- Better FK controllers orient managemenent
-- Twist joint
-- Complex leg
+* Support arm and leg chains.
+    * Arm = 3 joint length
+    * Leg = 5 joint length
+* Create an _ik chain and _fk chain using, by your choice, blendColors node connections or orientConstraint + Set Driven Key
+* Create fk controllers and ik-handles for legs and arms
 
-ACTUALLY
-- IK Handle without Pole Vector
-- FK controllers orient acceptable but shitty
-- Pls, less spaghetti 
+## TODO
+
+Lots of stuff
+
+* Complex leg and arm chain
