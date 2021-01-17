@@ -11,7 +11,8 @@ I use this type of joint naming: *side_jointName* ---> *l_upperleg* or *r_knee*
 Suffixes are ok but I need a this kind of prefix.
 
 
-## Features - IKFK-Builder
+# IKFK-Builder
+## Features
 
 Oh well, you know...simple stuff
 
@@ -21,8 +22,24 @@ Oh well, you know...simple stuff
 * Create an _ik chain and _fk chain using, by your choice, blendColors node connections or orientConstraint + Set Driven Key
 * Create fk controllers and ik-handles for legs and arms
 
-## TODO
+## TODO list
 
 Lots of stuff
 
-* Complex leg and arm chain
+* Clavicle support
+* Tweak about pole vectors
+* Complex leg and arm chain 
+* Add Squash and Stretch option
+* Color choice (by your own)
+* Better controllers
+
+
+# AutoHand
+## Features 
+
+* Duplicate hand chain
+* Fingers controller creation with attributes to control them
+
+## TODO list
+
+* IK Hand - Actually it started all for this, to create automatically an IK Hand. This is my main goal
