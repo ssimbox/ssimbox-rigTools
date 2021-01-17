@@ -8,12 +8,12 @@ This is just a start, I want to build always better tools to help my own works a
 
 Actually there a simple rule to remember using my tools **naming convention**. 
 I use this type of joint naming: *side_jointName* ---> *l_upperleg* or *r_knee*
-Suffixes are ok but I need a this kind of prefix.
+Suffixes are ok but I need this kind of prefix.
 
 
 # IKFK-Builder
 
-![Alt Text](https://media.giphy.com/media/tXBWZu0V0nIOU5CZuk/giphy.gif)
+![Alt Text](https://media.giphy.com/media/9oNiWOptNcUAJlf9cG/giphy.gif)
 ## Features
 
 Oh well, you know...
@@ -39,6 +39,7 @@ Lots of stuff
 
 
 # AutoHand
+![Alt Text](https://media.giphy.com/media/NYyDRYhQClclSwf4Fh/giphy.gif)
 ## Features 
 
 For now very simple stuff but it could be very useful to create an usable hand with fingers control.
