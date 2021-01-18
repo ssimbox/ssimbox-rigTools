@@ -6,7 +6,7 @@ def duplicateChain(scaleController, chainMenu, *args):
 
     global ogChain
     global chainLen
-    global cosoLoc
+    global switcherLoc
     global side
     global controllerColor
     
@@ -57,22 +57,22 @@ def duplicateChain(scaleController, chainMenu, *args):
     print ("newScale", scaleController)
     
     # Create a locator used for switching IK/FK mode and snap it between two joints
-    cosoLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
-    cosoLocGrp = cmds.group(em=1, n=cosoLoc[0] + "_grp")
-    cmds.color(cosoLoc, rgb=(255, 255, 0)) #yellow
-    cmds.delete(cmds.pointConstraint(cosoLoc, cosoLocGrp))
-    cmds.parent(cosoLoc, cosoLocGrp)
-    cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], cosoLocGrp))
-    cmds.addAttr(cosoLoc, ln="FKIK_Mode", at="short", min=0, max=1, k=1, r=1)
-    cmds.move(0,0,-12, cosoLocGrp, r=1) #IMPROVE THIS SHIT
-    cmds.parentConstraint(ogChain[1], cosoLocGrp, mo=1)
+    switcherLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
+    switcherLocGrp = cmds.group(em=1, n=switcherLoc[0] + "_grp")
+    cmds.color(switcherLoc, rgb=(255, 255, 0)) #yellow
+    cmds.delete(cmds.pointConstraint(switcherLoc, switcherLocGrp))
+    cmds.parent(switcherLoc, switcherLocGrp)
+    cmds.delete(cmds.pointConstraint(ogChain[1], ogChain[2], switcherLocGrp))
+    cmds.addAttr(switcherLoc, ln="FKIK_Mode", at="short", min=0, max=1, k=1, r=1)
+    cmds.move(0,0,-12, switcherLocGrp, r=1) #IMPROVE THIS SHIT
+    cmds.parentConstraint(ogChain[1], switcherLocGrp, mo=1)
     
     #remove .t, .r, .s and .v from the channelbox
     for coord in ["X", "Y", "Z"]:
-        cmds.setAttr(cosoLoc[0] + ".translate" + coord, k=0, l=1)
-        cmds.setAttr(cosoLoc[0] + ".rotate" + coord, k=0, l=1)
-        cmds.setAttr(cosoLoc[0] + ".scale" + coord, k=0, l=1)
-    cmds.setAttr(cosoLoc[0] + ".visibility", k=0, l=1)
+        cmds.setAttr(switcherLoc[0] + ".translate" + coord, k=0, l=1)
+        cmds.setAttr(switcherLoc[0] + ".rotate" + coord, k=0, l=1)
+        cmds.setAttr(switcherLoc[0] + ".scale" + coord, k=0, l=1)
+    cmds.setAttr(switcherLoc[0] + ".visibility", k=0, l=1)
 
     #print ("Scaling-->", scaleController)
 
@@ -82,6 +82,7 @@ def duplicateChain(scaleController, chainMenu, *args):
     if constraintCheckBox == 1:
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
 
+# Buttons +1 and +3
 count = 0
 
 def addOneUnit(*args):
@@ -107,7 +108,7 @@ def blendNodeFunc(scaleController, selectChain, *kekkeroni):
         cmds.connectAttr((ogChain[x] + "_ik.rotate"), blendColorsNode + ".color1")
         cmds.connectAttr((ogChain[x] + "_fk.rotate"), blendColorsNode + ".color2")
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
-        cmds.connectAttr(cosoLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
+        cmds.connectAttr(switcherLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
     ikChainBuild(scaleIK=scaleController, HandleName=selectChain, masterIkHandle=kekkeroni)
     fkControllerCreator(fkSize=scaleController, legOrArm=selectChain)
@@ -123,7 +124,7 @@ def constraintFunc(scaleController, selectChain, *kekkeroni):
         cmds.orientConstraint((ogChain[x] + "_fk"), ogChain[x])
 
         # Setup SDK naming convention
-        sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+        sdkDriver = switcherLoc[0] + ".FKIK_Mode"
         ikSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_ikW0"
         fkSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_fkW1"
 
@@ -170,7 +171,7 @@ def fkControllerCreator(fkSize, legOrArm):
         cmds.color(fk_controller, rgb=controllerColor)
         
         # Set SDK visibility
-        sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+        sdkDriver = switcherLoc[0] + ".FKIK_Mode"
         cmds.setAttr(sdkDriver, 1)
         cmds.setDrivenKeyframe(ogChain[0] + "_fk_anim_grp.visibility", cd=sdkDriver, v=1, dv=0)
         cmds.setAttr(sdkDriver, 0)
@@ -262,7 +263,7 @@ def armIk(armIkScale, armikHandle, pvName):
     cmds.addAttr(pvController, ln="Follow_Clav_Hand", k=1, r=1, min=0, max=1, dv=0.5)
     
     #set SDK visibility
-    sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+    sdkDriver = switcherLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
     cmds.setDrivenKeyframe(crvIkCubeGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
     cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=0, dv=0)
@@ -276,7 +277,6 @@ def legIK(ikFootScale, legikHandle, pvName):
     toeikHandle = cmds.ikHandle(sj=ogChain[3] + "_ik", ee=ogChain[4] + "_ik", sol="ikSCsolver", n=side + "toe_ikHandle")
     
     # Create and place ik controller
-    # 
     ikFootControl = cmds.curve(d=2, p=[(0.997, 0, 1.789), (0, 0, 2.39), (-0.997,0,1.789), (-1.108, 0, 0), (-0.784, 0,-2.5),
               (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)
               ],
@@ -333,7 +333,7 @@ def legIK(ikFootScale, legikHandle, pvName):
             cmds.addAttr(ikFootControl, ln=bone+coord, k=1, r=1)
     
     # Set SDK visibility
-    sdkDriver = cosoLoc[0] + ".FKIK_Mode"
+    sdkDriver = switcherLoc[0] + ".FKIK_Mode"
     cmds.setAttr(sdkDriver, 0)
     cmds.setDrivenKeyframe(ikFootControlGrp + ".visibility", cd=sdkDriver, v=0, dv=0)
     cmds.setDrivenKeyframe(pvController + "_grp.visibility", cd=sdkDriver, v=0, dv=0)
@@ -344,6 +344,7 @@ def legIK(ikFootScale, legikHandle, pvName):
 def findPoleVector(loc, targetHandle):
 
     # This func is kinda black magic
+    # All credits to https://vimeo.com/66015036
     start = cmds.xform(ogChain[0], q=1, ws=1, t=1)
     mid = cmds.xform(ogChain[1], q=1, ws=1, t=1)
     end = cmds.xform(ogChain[2], q=1, ws=1, t=1)
@@ -374,7 +375,6 @@ def findPoleVector(loc, targetHandle):
     cmds.color(loc, rgb=controllerColor)
 
     cmds.poleVectorConstraint(loc, targetHandle)
-
 
 
 def showUI():

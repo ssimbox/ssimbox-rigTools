@@ -2,14 +2,14 @@
 Welcome to my repo, first in my life.
 
 I'm currently working on controllers and relationships maker of my own rigs and I would like to share my entire work, free for all.
-Actually I developed a simple IKFK-builder for legs and arms and an auto hand maker (I really hate make fingers rigs, really boriiiing)
+Actually I developed a simple IKFK-builder for legs and arms and an auto hand maker (I really hate make fingers rigs, really tedious)
 
-This is just a start, I want to build always better tools to help my own works and, hopefully, speed up yours
+Actually there is a simple rule to remember using my tools **naming convention**. 
+I use this type of joint naming: *side_jointName* ---> *l_upperleg* or *r_knee*. Suffixes are ok but I need this kind of prefix.
 
-Actually there a simple rule to remember using my tools **naming convention**. 
-I use this type of joint naming: *side_jointName* ---> *l_upperleg* or *r_knee*
-Suffixes are ok but I need this kind of prefix.
-
+This is just a start, I want to build always better tools to help my own works and, hopefully, speed up yours.
+These things is what I achieved in one full month of study, I'm totally new to coding, there's much more to do.
+Any suggestion will be appreciated and, if you want to contribute feel free, I just want some of this in Maya world :)
 
 # IKFK-Builder
 
@@ -46,6 +46,13 @@ For now very simple stuff but it could be very useful to create an usable hand w
 
 * Various length fingers
 * Fingers controller creation with attributes to control them
+
+P.S. Another rule: if you use what I call _supportJoint_ (watch gif second shot) please use this hierarchy
+
+- Hand
+    - Thumb
+    - SupportJoint
+        - other fingers
 
 ## To-Do list
 
