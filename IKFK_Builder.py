@@ -9,6 +9,7 @@ def duplicateChain(scaleController, chainMenu, *args):
     global switcherLoc
     global side
     global controllerColor
+    global clavCheckbox
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
@@ -22,6 +23,8 @@ def duplicateChain(scaleController, chainMenu, *args):
     constraintCheckBox = cmds.checkBox(constraintCheckBox_UI, q=1, v=1) 
     
     chainMenu = cmds.optionMenu("chainMenu_UI", q=1, v=1)
+
+    clavCheckbox = cmds.checkBox(clavCheckbox_UI, q=1, v=0)
 
     if side == "l_": controllerColor = rgb=(0, 0, 255)
     elif side == "r_": controllerColor = rgb=(255, 0, 0)
@@ -81,6 +84,25 @@ def duplicateChain(scaleController, chainMenu, *args):
     
     if constraintCheckBox == 1:
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
+
+    if clavCheckbox == 1:
+        clavSel()
+
+def clavSel():
+    
+    #sel=cmds.ls(sl=1)
+    asd = cmds.pickWalk(ogChain[0], d="up")
+    clavCircle= cmds.circle(n="ciao", r=10)
+    cmds.delete(cmds.pointConstraint(asd, clavCircle))
+    print ("sel-->", asd)
+
+asd = 0
+def visCheck(vis):
+    if vis == "Arm":
+        asd = True
+    if vis == "Leg":
+        asd = False
+    cmds.checkBox(clavCheckbox_UI, e=1, vis=asd)
 
 # Buttons +1 and +3
 count = 0
@@ -386,13 +408,14 @@ def showUI():
     global blendCheckbox_UI
     global plusOne_UI
     global plusThree_UI
+    global clavCheckbox_UI
     
     if cmds.window("switchModeUI", ex = 1): cmds.deleteUI("switchModeUI")
     myWin = cmds.window("switchModeUI", t="IKFK Builder", w=300, h=300, s=1)
     mainLayout = cmds.formLayout(nd=50)
     
     # Useful in selecting which chain: Leg or Arm? 
-    chainMenu_UI = cmds.optionMenu("chainMenu_UI", l="Which chain?")
+    chainMenu_UI = cmds.optionMenu("chainMenu_UI", l="Which chain?", cc=visCheck)
     cmds.menuItem(l="Leg")
     cmds.menuItem(l="Arm")
 
@@ -400,6 +423,8 @@ def showUI():
                                           cc= lambda state: (cmds.checkBox(blendCheckbox_UI, e=1, en=state-1)))
     blendCheckbox_UI = cmds.checkBox(label = "blendColor Mode", v=0, 
                                      cc= lambda state: (cmds.checkBox(constraintCheckBox_UI, e=1, en=state-1)))
+
+    clavCheckbox_UI = cmds.checkBox(l="Clavicle", vis=0)
 
     # Useful in orienting FK controllers as the user wishes. Maybe this can be improved
     orientControllerMenu = cmds.optionMenu("UI_orientControllerMenu", l="What's the secondary axis")
@@ -422,8 +447,8 @@ def showUI():
 
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
-                        (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5), (chainMenu_UI, "right", 8),
-                        (constraintCheckBox_UI, "left", 8),
+                        (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5), (chainMenu_UI, "right", 80),
+                        (clavCheckbox_UI, "top", 7),
                         (blendCheckbox_UI, "left", 5),
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
@@ -440,7 +465,8 @@ def showUI():
                         
                         (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
                     ],
-                    attachControl = [(constraintCheckBox_UI, "top", 5, chainMenu_UI),
+                    attachControl = [(clavCheckbox_UI, "left", 10, chainMenu_UI),
+                                     (constraintCheckBox_UI, "top", 5, chainMenu_UI),
                                      (blendCheckbox_UI, "top", 5, chainMenu_UI),
                                      (separator01, "top", 5, constraintCheckBox_UI),
                                      (scaleField_UI, "top", 5, separator01),
@@ -448,11 +474,12 @@ def showUI():
                                      (plusOne_UI, "top", 4, separator01),
                                      (plusThree_UI, "top", 4, separator01),
                                      (separator02, "top", 6, scaleField_UI),
-                                     (orientControllerMenu, "top", 6, separator02)
+                                     (orientControllerMenu, "top", 6, separator02),
                     
                     ],
                     
-                    attachPosition = [(constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
+                    attachPosition = [#(clavCheckbox_UI, "right", 0, 10),
+                                      (constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
                                       (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0), #(scaleField_UI, "right",0, 40),
                                       (plusOne_UI, "right", 0, 45),
                                       (plusThree_UI, "right", 0, 49)
