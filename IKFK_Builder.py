@@ -90,7 +90,7 @@ def duplicateChain(scaleController, chainMenu, *args):
 
 def clavSel():
     
-    asd = cmds.pickWalk(ogChain[0], d="up")
+    clavJoint = cmds.pickWalk(ogChain[0], d="up")
     clavController = cmds.curve(d=1, p=[(0.0, -8.113749, -8.70951),
 (1.637134, -6.501093, -8.441733),
 (3.274268, -4.966615, -7.878044),
@@ -155,11 +155,21 @@ def clavSel():
 (-4.65647, -1.345292, -1.637134),(-3.198066, -0.606765, -1.637134),(-1.637134, -0.153032, -1.627559),(-1.637134, -0.606765, -3.198066),
 (-1.637134, -1.345292, -4.65647),(-1.637134, -2.342727, -5.951649),(-1.637134, -3.564106, -7.038203),(-3.274268, -3.564106, -7.038203),
 (-4.911403, -3.564106, -7.038203), (-3.274268, -4.966615, -7.878044),(-1.637134, -6.501093, -8.441733),
-(0.0, -8.113749, -8.70951)], n=side+"_clav")
-    cmds.delete(cmds.pointConstraint(asd, clavController))
+(0.0, -8.113749, -8.70951)], n=side + "clav_anim")
+
+    cmds.delete(cmds.pointConstraint(clavJoint, clavController))
+    clavControllerGrp = cmds.group(n=clavController + "_grp", em=1)
+    cmds.delete(cmds.parentConstraint(clavJoint, clavControllerGrp))
+    cmds.parent(clavController, clavControllerGrp)
+    cmds.makeIdentity(clavController, a=1)
+    cmds.move(0,10,0, clavControllerGrp, ws=1, r=1)
+    
+    piv = cmds.xform(clavJoint, q=True, ws=True, t=True)
+    cmds.xform(clavController, ws=True, piv=piv)
+    cmds.xform(clavControllerGrp, ws=True, piv=piv)
+    cmds.orientConstraint(clavController, clavJoint)
 
 
-asd = 0
 def visCheck(vis):
     if vis == "Arm":
         asd = True
