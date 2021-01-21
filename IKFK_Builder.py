@@ -86,7 +86,7 @@ def duplicateChain(scaleController, chainMenu, *args):
         constraintFunc(scaleController=scaleController, selectChain=chainMenu)
 
     if clavCheckbox == 1:
-        clavSel()
+        clavSel() 
 
 def clavSel():
     
@@ -168,6 +168,7 @@ def clavSel():
     cmds.xform(clavController, ws=True, piv=piv)
     cmds.xform(clavControllerGrp, ws=True, piv=piv)
     cmds.orientConstraint(clavController, clavJoint)
+    cmds.parent((ogChain[0]+"_fk_anim_grp"), clavController)
 
 
 def visCheck(vis):
@@ -247,7 +248,7 @@ def fkControllerCreator(fkSize, legOrArm):
     for y in range(chainLen):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_fk_anim_grp")
         fk_controller = cmds.circle(n=ogChain[y] + "_fk_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
-        
+
         # Set scale 
         cmds.scale(fkSize, fkSize, fkSize, fk_controller)
             
@@ -283,7 +284,6 @@ def fkControllerCreator(fkSize, legOrArm):
             continue
         cmds.parent(ogChain[x] + "_fk_anim_grp", ogChain[x-1] + "_fk_anim")
 
-    
     # Set orientConstraint _anim controllers with _fk hierarchy
     for x in range(chainLen):
         cmds.orientConstraint(ogChain[x] + "_fk_anim", ogChain[x] + "_fk")
@@ -293,6 +293,7 @@ def fkControllerCreator(fkSize, legOrArm):
                 cmds.delete(ogChain[chainLen-1] + "_fk_anim_grp")
         else:
             pass
+
 
 def ikChainBuild(scaleIK, HandleName, masterIkHandle):
     
@@ -464,6 +465,7 @@ def findPoleVector(loc, targetHandle):
 
     locGrp = cmds.group(em=1, n=loc + "_grp")
 
+    #snap, parent offsetGrp, set color and then make Constraint
     cmds.delete(cmds.pointConstraint(loc, locGrp))
     cmds.parent(loc, locGrp)
     cmds.makeIdentity(loc, a=1, t=1, r=1, s=1)
