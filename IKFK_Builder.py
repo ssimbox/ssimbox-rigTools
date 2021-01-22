@@ -1,4 +1,4 @@
-from ctrlUI_lib import createClav2
+from ctrlUI_lib import createClav2, createSphere
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from functools import partial
@@ -91,21 +91,24 @@ def duplicateChain(scaleController, chainMenu, *args):
 
 def clavSel():
     
+    # Select clavicle Joint moving up
     clavJoint = cmds.pickWalk(ogChain[0], d="up")
-    clavName = side+"clav_anim"
-    clavController = createClav2(clavName)
-    print("builder--->", clavController)
-    
+    clavController = createClav2(clavJoint[0] + "_anim") # Import coordinates from ctrlUI_lib
     cmds.delete(cmds.pointConstraint(clavJoint, clavController))
+
+    # Create offset group, FDH and move up 
     clavControllerGrp = cmds.group(n=clavController + "_grp", em=1)
     cmds.delete(cmds.parentConstraint(clavJoint, clavControllerGrp))
     cmds.parent(clavController, clavControllerGrp)
     cmds.makeIdentity(clavController, a=1)
     cmds.move(0,10,0, clavControllerGrp, ws=1, r=1)
     
+    # Move pivots on clavicle joint
     piv = cmds.xform(clavJoint, q=True, ws=True, t=True)
     cmds.xform(clavController, ws=True, piv=piv)
     cmds.xform(clavControllerGrp, ws=True, piv=piv)
+
+    
     cmds.orientConstraint(clavController, clavJoint)
     cmds.parent((ogChain[0]+"_fk_anim_grp"), clavController)
     
@@ -273,23 +276,7 @@ def armIk(armIkScale, armikHandle, pvName):
 
     cmds.parent(armikHandle[0], crvIkCube)
 
-    pvController = cmds.curve(d=1, p=[
-                                    ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                    ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                    ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                    ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                    ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                    ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                    ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                    ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                    ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                    ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                    ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                    ( 0, 0, -1)], 
-                                    k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 
-                                    20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 
-                                    35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52],
-                                    n=side + pvName + "_PV")
+    pvController = createSphere(nome= side+pvName+"_PV")
 
     findPoleVector(loc=pvController, targetHandle=armikHandle[0])
 
@@ -335,23 +322,7 @@ def legIK(ikFootScale, legikHandle, pvName):
     
     #---------- Making Pole Vector -------------#
     # Pole Vector controller ---> Sphere
-    pvController = cmds.curve(d=1, p=[
-                                    ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                    ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                    ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                    ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                    ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                    ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                    ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                    ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                    ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                    ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                    ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                    ( 0, 0, -1)], 
-                                    k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 
-                                    20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 
-                                    35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52],
-                                    n=side + pvName + "_PV")
+    pvController = createSphere(nome= side+pvName+"_PV")
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
 
