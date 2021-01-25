@@ -37,6 +37,14 @@ Lots of stuff
 * Better controllers
 * Auto hierarchy in outliner
 
+## How to install
+Save *IKFK_Builder* in your maya scripts folder with *ctrlUI_lib*
+Then, write and save this lines into your shelf
+
+```
+import IKFK_Builder
+IKFK_Builder.showUI()
+```
 
 # AutoHand
 ![Alt Text](https://media.giphy.com/media/NYyDRYhQClclSwf4Fh/giphy.gif)
@@ -59,3 +67,11 @@ P.S. Another rule: if you use what I call _supportJoint_ (watch gif second shot)
 * IK Hand - Actually it started all for this, to create automatically an IK Hand. This is my main goal
 * Various hand builds - My objective was to build the human hand (five fingers) but could be useful have three, four or six fingers.
 
+## How to install
+Save *Auto_Hand* in your maya scripts folder
+Then, write and save this lines into your shelf
+
+```
+import Auto_Hand
+Auto_Hand.showUI()
+```

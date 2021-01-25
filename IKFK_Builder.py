@@ -1,27 +1,32 @@
+from ctrlUI_lib import createClav2, createSphere
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from functools import partial
 
-def duplicateChain(scaleController, chainMenu, *args):
-
+def duplicateChain(*args):
+    
     global ogChain
     global chainLen
     global switcherLoc
     global side
     global controllerColor
+    global clavCheckbox
+    global rigGrp, ctrlGrp
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
     ogChain.append(ogRootchain)
     ogChain.reverse()
     side = ogRootchain[0:2]
-    
+
     # Initialize input from UI
     scaleController = cmds.intField(scaleField_UI, q=1, v=1)
     blendCheckbox = cmds.checkBox(blendCheckbox_UI, q=1, v=1) 
     constraintCheckBox = cmds.checkBox(constraintCheckBox_UI, q=1, v=1) 
     
     chainMenu = cmds.optionMenu("chainMenu_UI", q=1, v=1)
+
+    clavCheckbox = cmds.checkBox(clavCheckbox_UI, q=1, v=0)
 
     if side == "l_": controllerColor = rgb=(0, 0, 255)
     elif side == "r_": controllerColor = rgb=(255, 0, 0)
@@ -53,9 +58,6 @@ def duplicateChain(scaleController, chainMenu, *args):
     cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
-
-    print ("newScale", scaleController)
-    
     # Create a locator used for switching IK/FK mode and snap it between two joints
     switcherLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
     switcherLocGrp = cmds.group(em=1, n=switcherLoc[0] + "_grp")
@@ -73,14 +75,68 @@ def duplicateChain(scaleController, chainMenu, *args):
         cmds.setAttr(switcherLoc[0] + ".rotate" + coord, k=0, l=1)
         cmds.setAttr(switcherLoc[0] + ".scale" + coord, k=0, l=1)
     cmds.setAttr(switcherLoc[0] + ".visibility", k=0, l=1)
+    
+    # Create hierarchy groups
+    rigGrp = cmds.group(em=1, n= side + chainMenu + "_rig_grp")
+    ctrlGrp = cmds.group(em=1, n= side + chainMenu + "_ctrl_grp")
 
-    #print ("Scaling-->", scaleController)
+    cmds.delete(cmds.parentConstraint(ogChain[0], rigGrp))
+    cmds.delete(cmds.parentConstraint(ogChain[0], ctrlGrp))
+    cmds.parent(ctrlGrp, rigGrp)
 
+    # Execute
     if blendCheckbox == 1:
-        blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
+        blendNodeFunc(scaleController, chainMenu)
     
     if constraintCheckBox == 1:
-        constraintFunc(scaleController=scaleController, selectChain=chainMenu)
+        constraintFunc(scaleController, chainMenu)
+
+    if clavCheckbox == 1:
+        clavSel(scaleController)
+    else:
+        cmds.parent(ogChain[0] + "_ik", ogChain[0] + "_fk", ctrlGrp)
+        cmds.parent(ogChain[0] + "_fk_anim_grp", ctrlGrp)
+        cmds.parent(switcherLocGrp, rigGrp)
+    
+
+def clavSel(scaleClav):
+
+    # Select clavicle Joint moving up and put it at the top of the chain
+    clavJoint = cmds.pickWalk(ogChain[0], d="up")[0]
+    #ogChain.insert(0, clavJoint)
+
+    clavController = createClav2(clavJoint + "_anim") # Import coordinates from ctrlUI_lib
+    cmds.delete(cmds.pointConstraint(clavJoint, clavController))
+
+    # Create offset group, FDH and move up 
+    clavControllerGrp = cmds.group(n=clavController + "_grp", em=1)
+    cmds.delete(cmds.parentConstraint(clavJoint, clavControllerGrp))
+    cmds.parent(clavController, clavControllerGrp)
+    fixedScale = scaleClav/4
+    cmds.scale(fixedScale, fixedScale, fixedScale, clavController)
+    cmds.makeIdentity(clavController, a=1)
+    cmds.move(0,10,0, clavControllerGrp, ws=1, r=1)
+    cmds.color(clavController, rgb=controllerColor)
+    
+    # Move pivots on clavicle joint
+    piv = cmds.xform(clavJoint, q=True, ws=True, t=True)
+    cmds.xform(clavController, ws=True, piv=piv)
+    cmds.xform(clavControllerGrp, ws=True, piv=piv)
+    
+    cmds.orientConstraint(clavController, clavJoint)
+
+    # Parent ik and fk chain under clavicle controller    
+    cmds.parent((ogChain[0]+"_fk_anim_grp"),(ogChain[0] + "_ik"), (ogChain[0] + "_fk"), clavController)
+
+    cmds.parent(clavControllerGrp, ctrlGrp)
+
+
+def visCheck(vis):
+    if vis == "Arm":
+        asd = True
+    if vis == "Leg":
+        asd = False
+    cmds.checkBox(clavCheckbox_UI, e=1, vis=asd, v=asd)
 
 # Buttons +1 and +3
 count = 0
@@ -97,7 +153,7 @@ def addThreeUnit(*args):
     cmds.intField(scaleField_UI, v=1+count, e=1)
 
 
-def blendNodeFunc(scaleController, selectChain, *kekkeroni):
+def blendNodeFunc(scaleController, selectChain):
 
     # Create some blendColors node with the same name of the joint
     for x in range(chainLen):
@@ -110,11 +166,11 @@ def blendNodeFunc(scaleController, selectChain, *kekkeroni):
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
         cmds.connectAttr(switcherLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
-    ikChainBuild(scaleIK=scaleController, HandleName=selectChain, masterIkHandle=kekkeroni)
-    fkControllerCreator(fkSize=scaleController, legOrArm=selectChain)
+    ikChainBuild(scaleController, selectChain)
+    fkControllerCreator(scaleController, selectChain)
 
 
-def constraintFunc(scaleController, selectChain, *kekkeroni):
+def constraintFunc(scaleController, selectChain):
 
     # Create some blendColors node with the same name of the joint
     for x in range(chainLen):
@@ -138,9 +194,8 @@ def constraintFunc(scaleController, selectChain, *kekkeroni):
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
 
     
-    ikChainBuild(scaleIK=scaleController, HandleName=selectChain, masterIkHandle=kekkeroni)
-    fkControllerCreator(fkSize=scaleController, legOrArm=selectChain)
-
+    ikChainBuild(scaleController, selectChain)
+    fkControllerCreator(scaleController, selectChain)
     
 
 def fkControllerCreator(fkSize, legOrArm):
@@ -152,7 +207,7 @@ def fkControllerCreator(fkSize, legOrArm):
     for y in range(chainLen):
         anim_group = cmds.group(em=1, n=ogChain[y] + "_fk_anim_grp")
         fk_controller = cmds.circle(n=ogChain[y] + "_fk_anim")[0] # If not [0] it'll warn some stuff related to Maya underworld
-        
+
         # Set scale 
         cmds.scale(fkSize, fkSize, fkSize, fk_controller)
             
@@ -188,7 +243,6 @@ def fkControllerCreator(fkSize, legOrArm):
             continue
         cmds.parent(ogChain[x] + "_fk_anim_grp", ogChain[x-1] + "_fk_anim")
 
-    
     # Set orientConstraint _anim controllers with _fk hierarchy
     for x in range(chainLen):
         cmds.orientConstraint(ogChain[x] + "_fk_anim", ogChain[x] + "_fk")
@@ -196,20 +250,19 @@ def fkControllerCreator(fkSize, legOrArm):
         if legOrArm == "Leg":
             if x == (chainLen-1):
                 cmds.delete(ogChain[chainLen-1] + "_fk_anim_grp")
-        else:
-            pass
 
-def ikChainBuild(scaleIK, HandleName, masterIkHandle):
+
+def ikChainBuild(scaleIK, HandleName):
     
     masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + HandleName + "_ikHandle")
     cmds.setAttr(masterIkHandle[0] + ".visibility", 0)
     
     if HandleName == "Arm": 
         #print ("scaleController", scaleField_UI)
-        armIk(armIkScale=scaleIK, armikHandle=masterIkHandle, pvName=HandleName)
+        armIk(scaleIK, masterIkHandle, HandleName)
     else:   
         #print ("scaleController", scaleField_UI)
-        legIK(ikFootScale=scaleIK, legikHandle=masterIkHandle, pvName=HandleName)
+        legIK(scaleIK, masterIkHandle, HandleName)
 
 
 def armIk(armIkScale, armikHandle, pvName):
@@ -217,7 +270,10 @@ def armIk(armIkScale, armikHandle, pvName):
     ikHandJoint = cmds.joint(n=side + "hand_ik")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
     cmds.makeIdentity(ikHandJoint, a = 1, t = 1, r = 1, s = 0)
-    cmds.move(10,0,0, ikHandJoint, r=1, os=1)
+    if side == "l_":
+        cmds.move(10,0,0, ikHandJoint, r=1, os=1)
+    else:
+        cmds.move(-10,0,0, ikHandJoint, r=1, os=1)
     cmds.parent(ikHandJoint, ogChain[2] + "_ik")
     handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
     cmds.parent(handikHandle[0], armikHandle[0])
@@ -238,29 +294,16 @@ def armIk(armIkScale, armikHandle, pvName):
 
     cmds.parent(armikHandle[0], crvIkCube)
 
-    pvController = cmds.curve(d=1, p=[
-                                    ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                    ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                    ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                    ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                    ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                    ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                    ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                    ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                    ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                    ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                    ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                    ( 0, 0, -1)], 
-                                    k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 
-                                    20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 
-                                    35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52],
-                                    n=side + pvName + "_PV")
+    pvController = createSphere(nome= side+pvName+"_PV")
 
     findPoleVector(loc=pvController, targetHandle=armikHandle[0])
 
     cmds.addAttr(pvController, at="enum", enumName = "------", ln="Attributes", k=1, r=1)
     cmds.addAttr(pvController, ln="Follow", k=1, r=1, min=0, max=1)
     cmds.addAttr(pvController, ln="Follow_Clav_Hand", k=1, r=1, min=0, max=1, dv=0.5)
+
+    # Parent ikController and PV under _rig_GRP
+    cmds.parent(crvIkCubeGrp, pvController + "_grp" ,rigGrp)
     
     #set SDK visibility
     sdkDriver = switcherLoc[0] + ".FKIK_Mode"
@@ -278,8 +321,7 @@ def legIK(ikFootScale, legikHandle, pvName):
     
     # Create and place ik controller
     ikFootControl = cmds.curve(d=2, p=[(0.997, 0, 1.789), (0, 0, 2.39), (-0.997,0,1.789), (-1.108, 0, 0), (-0.784, 0,-2.5),
-              (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)
-              ],
+              (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)],
               k=[0,1,2,3,4,5,6,7,8,9,10], n=side + "leg_anim_ik")
     ikFootControlGrp = cmds.group(em=1, n=ikFootControl + "_grp")
     cmds.parent(ikFootControl, ikFootControlGrp)
@@ -300,23 +342,7 @@ def legIK(ikFootScale, legikHandle, pvName):
     
     #---------- Making Pole Vector -------------#
     # Pole Vector controller ---> Sphere
-    pvController = cmds.curve(d=1, p=[
-                                    ( 0, 1, 0 ), ( 0, 0.92388, 0.382683 ), ( 0, 0.707107, 0.707107 ), 
-                                    ( 0, 0.382683, 0.92388 ), ( 0, 0, 1 ), ( 0, -0.382683, 0.92388 ), ( 0, -0.707107, 0.707107 ), ( 0, -0.92388, 0.382683 ), 
-                                    ( 0, -1, 0 ), ( 0, -0.92388, -0.382683 ), ( 0, -0.707107, -0.707107 ), ( 0, -0.382683, -0.92388 ), 
-                                    ( 0, 0, -1 ), ( 0, 0.382683, -0.92388 ), ( 0, 0.707107, -0.707107 ), ( 0, 0.92388, -0.382683 ), ( 0, 1, 0 ), 
-                                    ( 0.382683, 0.92388, 0 ), ( 0.707107, 0.707107, 0 ), ( 0.92388, 0.382683, 0 ), ( 1, 0, 0 ), ( 0.92388, -0.382683, 0 ), 
-                                    ( 0.707107, -0.707107, 0 ), ( 0.382683, -0.92388, 0 ), ( 0, -1, 0 ), ( -0.382683, -0.92388, 0 ), ( -0.707107, -0.707107, 0 ), 
-                                    ( -0.92388, -0.382683, 0 ), ( -1, 0, 0 ), ( -0.92388, 0.382683, 0 ), ( -0.707107, 0.707107, 0 ), ( -0.382683, 0.92388, 0 ), 
-                                    ( 0, 1, 0 ), ( 0, 0.92388, -0.382683, ), ( 0, 0.707107, -0.707107, ), ( 0, 0.382683, -0.92388, ), ( 0, 0, -1 ), 
-                                    ( -0.382683, 0, -0.92388 ), ( -0.707107, 0, -0.707107 ), ( -0.92388, 0, -0.382683 ), ( -1, 0, 0 ), ( -0.92388, 0, 0.382683 ), 
-                                    ( -0.707107, 0, 0.707107 ), ( -0.382683, 0, 0.92388 ), ( 0, 0, 1 ), ( 0.382683, 0, 0.92388 ), ( 0.707107, 0, 0.707107 ), 
-                                    ( 0.92388, 0, 0.382683 ), ( 1, 0, 0 ), ( 0.92388, 0, -0.382683 ), ( 0.707107, 0, -0.707107 ), ( 0.382683, 0, -0.92388 ), 
-                                    ( 0, 0, -1)], 
-                                    k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 
-                                    20 , 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 
-                                    35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 48 , 49 , 50 , 51 , 52],
-                                    n=side + pvName + "_PV")
+    pvController = createSphere(nome= side+pvName+"_PV")
 
     findPoleVector(loc=pvController, targetHandle=legikHandle[0])
 
@@ -331,6 +357,9 @@ def legIK(ikFootScale, legikHandle, pvName):
         cmds.addAttr(ikFootControl, at="enum", enumName = "------", ln=bone, k=1, r=1)
         for coord in ["X", "Y", "Z"]:
             cmds.addAttr(ikFootControl, ln=bone+coord, k=1, r=1)
+
+    # Parent ikController and PV under _rig_GRP
+    cmds.parent(ikFootControlGrp, pvController + "_grp" ,rigGrp)
     
     # Set SDK visibility
     sdkDriver = switcherLoc[0] + ".FKIK_Mode"
@@ -369,6 +398,7 @@ def findPoleVector(loc, targetHandle):
 
     locGrp = cmds.group(em=1, n=loc + "_grp")
 
+    #snap, parent offsetGrp, set color and then make Constraint
     cmds.delete(cmds.pointConstraint(loc, locGrp))
     cmds.parent(loc, locGrp)
     cmds.makeIdentity(loc, a=1, t=1, r=1, s=1)
@@ -386,13 +416,14 @@ def showUI():
     global blendCheckbox_UI
     global plusOne_UI
     global plusThree_UI
+    global clavCheckbox_UI
     
     if cmds.window("switchModeUI", ex = 1): cmds.deleteUI("switchModeUI")
     myWin = cmds.window("switchModeUI", t="IKFK Builder", w=300, h=300, s=1)
     mainLayout = cmds.formLayout(nd=50)
     
     # Useful in selecting which chain: Leg or Arm? 
-    chainMenu_UI = cmds.optionMenu("chainMenu_UI", l="Which chain?")
+    chainMenu_UI = cmds.optionMenu("chainMenu_UI", l="Which chain?", cc=visCheck)
     cmds.menuItem(l="Leg")
     cmds.menuItem(l="Arm")
 
@@ -401,6 +432,8 @@ def showUI():
     blendCheckbox_UI = cmds.checkBox(label = "blendColor Mode", v=0, 
                                      cc= lambda state: (cmds.checkBox(constraintCheckBox_UI, e=1, en=state-1)))
 
+    clavCheckbox_UI = cmds.checkBox(l="Clavicle", vis=0)
+
     # Useful in orienting FK controllers as the user wishes. Maybe this can be improved
     orientControllerMenu = cmds.optionMenu("UI_orientControllerMenu", l="What's the secondary axis")
     cmds.menuItem(l="x")
@@ -408,7 +441,7 @@ def showUI():
     cmds.menuItem(l="z")
 
     # Scale the UI becase you'll never know
-    scaleControllerText = cmds.text(l="FK Controllers size")
+    scaleControllerText = cmds.text(l="Controllers size")
     scaleField_UI = cmds.intField(en=10, v=1, min=1)
 
     plusOne_UI = cmds.button(l="+1", c=addOneUnit)
@@ -422,8 +455,8 @@ def showUI():
 
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
-                        (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5), (chainMenu_UI, "right", 8),
-                        (constraintCheckBox_UI, "left", 8),
+                        (chainMenu_UI, "left", 8), (chainMenu_UI, "top", 5), (chainMenu_UI, "right", 80),
+                        (clavCheckbox_UI, "top", 7),
                         (blendCheckbox_UI, "left", 5),
                         (separator01, "left", 1), (separator01, "right", 2),
                         #--------------------
@@ -440,7 +473,8 @@ def showUI():
                         
                         (execButton, "bottom", 5), (execButton, "left", 5), (execButton, "right", 5),
                     ],
-                    attachControl = [(constraintCheckBox_UI, "top", 5, chainMenu_UI),
+                    attachControl = [(clavCheckbox_UI, "left", 10, chainMenu_UI),
+                                     (constraintCheckBox_UI, "top", 5, chainMenu_UI),
                                      (blendCheckbox_UI, "top", 5, chainMenu_UI),
                                      (separator01, "top", 5, constraintCheckBox_UI),
                                      (scaleField_UI, "top", 5, separator01),
@@ -448,11 +482,12 @@ def showUI():
                                      (plusOne_UI, "top", 4, separator01),
                                      (plusThree_UI, "top", 4, separator01),
                                      (separator02, "top", 6, scaleField_UI),
-                                     (orientControllerMenu, "top", 6, separator02)
+                                     (orientControllerMenu, "top", 6, separator02),
                     
                     ],
                     
-                    attachPosition = [(constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
+                    attachPosition = [#(clavCheckbox_UI, "right", 0, 10),
+                                      (constraintCheckBox_UI, "left", 0, 26), (blendCheckbox_UI, "right", 10, 24),
                                       (scaleControllerText, "left", 5, 0), (scaleField_UI, "left", 110, 0), #(scaleField_UI, "right",0, 40),
                                       (plusOne_UI, "right", 0, 45),
                                       (plusThree_UI, "right", 0, 49)
