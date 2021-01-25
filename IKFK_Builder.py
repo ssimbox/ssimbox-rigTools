@@ -92,16 +92,14 @@ def duplicateChain(*args):
         constraintFunc(scaleController, chainMenu)
 
     if clavCheckbox == 1:
-        clavSel()
+        clavSel(scaleController)
     else:
         cmds.parent(ogChain[0] + "_ik", ogChain[0] + "_fk", ctrlGrp)
         cmds.parent(ogChain[0] + "_fk_anim_grp", ctrlGrp)
         cmds.parent(switcherLocGrp, rigGrp)
     
-    
 
-
-def clavSel():
+def clavSel(scaleClav):
 
     # Select clavicle Joint moving up and put it at the top of the chain
     clavJoint = cmds.pickWalk(ogChain[0], d="up")[0]
@@ -114,6 +112,8 @@ def clavSel():
     clavControllerGrp = cmds.group(n=clavController + "_grp", em=1)
     cmds.delete(cmds.parentConstraint(clavJoint, clavControllerGrp))
     cmds.parent(clavController, clavControllerGrp)
+    fixedScale = scaleClav/4
+    cmds.scale(fixedScale, fixedScale, fixedScale, clavController)
     cmds.makeIdentity(clavController, a=1)
     cmds.move(0,10,0, clavControllerGrp, ws=1, r=1)
     cmds.color(clavController, rgb=controllerColor)
@@ -136,7 +136,7 @@ def visCheck(vis):
         asd = True
     if vis == "Leg":
         asd = False
-    cmds.checkBox(clavCheckbox_UI, e=1, vis=asd)
+    cmds.checkBox(clavCheckbox_UI, e=1, vis=asd, v=asd)
 
 # Buttons +1 and +3
 count = 0
@@ -196,8 +196,6 @@ def constraintFunc(scaleController, selectChain):
     
     ikChainBuild(scaleController, selectChain)
     fkControllerCreator(scaleController, selectChain)
-    if clavCheckbox == 1:
-        clavSel()
     
 
 def fkControllerCreator(fkSize, legOrArm):
@@ -323,8 +321,7 @@ def legIK(ikFootScale, legikHandle, pvName):
     
     # Create and place ik controller
     ikFootControl = cmds.curve(d=2, p=[(0.997, 0, 1.789), (0, 0, 2.39), (-0.997,0,1.789), (-1.108, 0, 0), (-0.784, 0,-2.5),
-              (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)
-              ],
+              (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)],
               k=[0,1,2,3,4,5,6,7,8,9,10], n=side + "leg_anim_ik")
     ikFootControlGrp = cmds.group(em=1, n=ikFootControl + "_grp")
     cmds.parent(ikFootControl, ikFootControlGrp)
@@ -444,7 +441,7 @@ def showUI():
     cmds.menuItem(l="z")
 
     # Scale the UI becase you'll never know
-    scaleControllerText = cmds.text(l="FK Controllers size")
+    scaleControllerText = cmds.text(l="Controllers size")
     scaleField_UI = cmds.intField(en=10, v=1, min=1)
 
     plusOne_UI = cmds.button(l="+1", c=addOneUnit)
