@@ -3,21 +3,22 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 from functools import partial
 
-def duplicateChain(scaleController, chainMenu, *args):
-
+def duplicateChain(*args):
+    
     global ogChain
     global chainLen
     global switcherLoc
     global side
     global controllerColor
     global clavCheckbox
+    global rigGrp, ctrlGrp
     
     ogRootchain = cmds.ls(sl = True, type = "joint")[0]        
     ogChain = cmds.listRelatives(ogRootchain, ad = True, type = "joint")
     ogChain.append(ogRootchain)
     ogChain.reverse()
     side = ogRootchain[0:2]
-    
+
     # Initialize input from UI
     scaleController = cmds.intField(scaleField_UI, q=1, v=1)
     blendCheckbox = cmds.checkBox(blendCheckbox_UI, q=1, v=1) 
@@ -57,9 +58,6 @@ def duplicateChain(scaleController, chainMenu, *args):
     cmds.setAttr(ogChain[0] + "_ik.visibility", 0)
     cmds.setAttr(ogChain[0] + "_fk.visibility", 0)
 
-
-    print ("newScale", scaleController)
-    
     # Create a locator used for switching IK/FK mode and snap it between two joints
     switcherLoc = cmds.spaceLocator(n=side + chainMenu + "_ikfk_Switch")
     switcherLocGrp = cmds.group(em=1, n=switcherLoc[0] + "_grp")
@@ -77,23 +75,39 @@ def duplicateChain(scaleController, chainMenu, *args):
         cmds.setAttr(switcherLoc[0] + ".rotate" + coord, k=0, l=1)
         cmds.setAttr(switcherLoc[0] + ".scale" + coord, k=0, l=1)
     cmds.setAttr(switcherLoc[0] + ".visibility", k=0, l=1)
+    
+    # Create hierarchy groups
+    rigGrp = cmds.group(em=1, n= side + chainMenu + "_rig_grp")
+    ctrlGrp = cmds.group(em=1, n= side + chainMenu + "_ctrl_grp")
 
-    #print ("Scaling-->", scaleController)
+    cmds.delete(cmds.parentConstraint(ogChain[0], rigGrp))
+    cmds.delete(cmds.parentConstraint(ogChain[0], ctrlGrp))
+    cmds.parent(ctrlGrp, rigGrp)
 
+    # Execute
     if blendCheckbox == 1:
-        blendNodeFunc(scaleController=scaleController, selectChain=chainMenu)
+        blendNodeFunc(scaleController, chainMenu)
     
     if constraintCheckBox == 1:
-        constraintFunc(scaleController=scaleController, selectChain=chainMenu)
+        constraintFunc(scaleController, chainMenu)
 
     if clavCheckbox == 1:
-        clavSel() 
+        clavSel()
+    else:
+        cmds.parent(ogChain[0] + "_ik", ogChain[0] + "_fk", ctrlGrp)
+        cmds.parent(ogChain[0] + "_fk_anim_grp", ctrlGrp)
+        cmds.parent(switcherLocGrp, rigGrp)
+    
+    
+
 
 def clavSel():
-    
-    # Select clavicle Joint moving up
-    clavJoint = cmds.pickWalk(ogChain[0], d="up")
-    clavController = createClav2(clavJoint[0] + "_anim") # Import coordinates from ctrlUI_lib
+
+    # Select clavicle Joint moving up and put it at the top of the chain
+    clavJoint = cmds.pickWalk(ogChain[0], d="up")[0]
+    #ogChain.insert(0, clavJoint)
+
+    clavController = createClav2(clavJoint + "_anim") # Import coordinates from ctrlUI_lib
     cmds.delete(cmds.pointConstraint(clavJoint, clavController))
 
     # Create offset group, FDH and move up 
@@ -102,16 +116,20 @@ def clavSel():
     cmds.parent(clavController, clavControllerGrp)
     cmds.makeIdentity(clavController, a=1)
     cmds.move(0,10,0, clavControllerGrp, ws=1, r=1)
+    cmds.color(clavController, rgb=controllerColor)
     
     # Move pivots on clavicle joint
     piv = cmds.xform(clavJoint, q=True, ws=True, t=True)
     cmds.xform(clavController, ws=True, piv=piv)
     cmds.xform(clavControllerGrp, ws=True, piv=piv)
-
     
     cmds.orientConstraint(clavController, clavJoint)
-    cmds.parent((ogChain[0]+"_fk_anim_grp"), clavController)
-    
+
+    # Parent ik and fk chain under clavicle controller    
+    cmds.parent((ogChain[0]+"_fk_anim_grp"),(ogChain[0] + "_ik"), (ogChain[0] + "_fk"), clavController)
+
+    cmds.parent(clavControllerGrp, ctrlGrp)
+
 
 def visCheck(vis):
     if vis == "Arm":
@@ -135,7 +153,7 @@ def addThreeUnit(*args):
     cmds.intField(scaleField_UI, v=1+count, e=1)
 
 
-def blendNodeFunc(scaleController, selectChain, *kekkeroni):
+def blendNodeFunc(scaleController, selectChain):
 
     # Create some blendColors node with the same name of the joint
     for x in range(chainLen):
@@ -148,11 +166,11 @@ def blendNodeFunc(scaleController, selectChain, *kekkeroni):
         cmds.connectAttr((blendColorsNode + ".output"), (ogChain[x] + ".rotate" ))
         cmds.connectAttr(switcherLoc[0]+".FKIK_Mode", blendColorsNode + ".blender")
 
-    ikChainBuild(scaleIK=scaleController, HandleName=selectChain, masterIkHandle=kekkeroni)
-    fkControllerCreator(fkSize=scaleController, legOrArm=selectChain)
+    ikChainBuild(scaleController, selectChain)
+    fkControllerCreator(scaleController, selectChain)
 
 
-def constraintFunc(scaleController, selectChain, *kekkeroni):
+def constraintFunc(scaleController, selectChain):
 
     # Create some blendColors node with the same name of the joint
     for x in range(chainLen):
@@ -176,9 +194,10 @@ def constraintFunc(scaleController, selectChain, *kekkeroni):
         cmds.setDrivenKeyframe(fkSdkDriven, cd=sdkDriver, v=0, dv=1)
 
     
-    ikChainBuild(scaleIK=scaleController, HandleName=selectChain, masterIkHandle=kekkeroni)
-    fkControllerCreator(fkSize=scaleController, legOrArm=selectChain)
-
+    ikChainBuild(scaleController, selectChain)
+    fkControllerCreator(scaleController, selectChain)
+    if clavCheckbox == 1:
+        clavSel()
     
 
 def fkControllerCreator(fkSize, legOrArm):
@@ -233,21 +252,19 @@ def fkControllerCreator(fkSize, legOrArm):
         if legOrArm == "Leg":
             if x == (chainLen-1):
                 cmds.delete(ogChain[chainLen-1] + "_fk_anim_grp")
-        else:
-            pass
 
 
-def ikChainBuild(scaleIK, HandleName, masterIkHandle):
+def ikChainBuild(scaleIK, HandleName):
     
     masterIkHandle = cmds.ikHandle(sj=ogChain[0] + "_ik", ee=ogChain[2] + "_ik", sol="ikRPsolver", n=side + HandleName + "_ikHandle")
     cmds.setAttr(masterIkHandle[0] + ".visibility", 0)
     
     if HandleName == "Arm": 
         #print ("scaleController", scaleField_UI)
-        armIk(armIkScale=scaleIK, armikHandle=masterIkHandle, pvName=HandleName)
+        armIk(scaleIK, masterIkHandle, HandleName)
     else:   
         #print ("scaleController", scaleField_UI)
-        legIK(ikFootScale=scaleIK, legikHandle=masterIkHandle, pvName=HandleName)
+        legIK(scaleIK, masterIkHandle, HandleName)
 
 
 def armIk(armIkScale, armikHandle, pvName):
@@ -255,7 +272,10 @@ def armIk(armIkScale, armikHandle, pvName):
     ikHandJoint = cmds.joint(n=side + "hand_ik")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", ikHandJoint))
     cmds.makeIdentity(ikHandJoint, a = 1, t = 1, r = 1, s = 0)
-    cmds.move(10,0,0, ikHandJoint, r=1, os=1)
+    if side == "l_":
+        cmds.move(10,0,0, ikHandJoint, r=1, os=1)
+    else:
+        cmds.move(-10,0,0, ikHandJoint, r=1, os=1)
     cmds.parent(ikHandJoint, ogChain[2] + "_ik")
     handikHandle = cmds.ikHandle(sj=ogChain[2] + "_ik", ee=ikHandJoint, n=side + "hand_ikHandle", sol="ikSCsolver")
     cmds.parent(handikHandle[0], armikHandle[0])
@@ -283,6 +303,9 @@ def armIk(armIkScale, armikHandle, pvName):
     cmds.addAttr(pvController, at="enum", enumName = "------", ln="Attributes", k=1, r=1)
     cmds.addAttr(pvController, ln="Follow", k=1, r=1, min=0, max=1)
     cmds.addAttr(pvController, ln="Follow_Clav_Hand", k=1, r=1, min=0, max=1, dv=0.5)
+
+    # Parent ikController and PV under _rig_GRP
+    cmds.parent(crvIkCubeGrp, pvController + "_grp" ,rigGrp)
     
     #set SDK visibility
     sdkDriver = switcherLoc[0] + ".FKIK_Mode"
@@ -337,6 +360,9 @@ def legIK(ikFootScale, legikHandle, pvName):
         cmds.addAttr(ikFootControl, at="enum", enumName = "------", ln=bone, k=1, r=1)
         for coord in ["X", "Y", "Z"]:
             cmds.addAttr(ikFootControl, ln=bone+coord, k=1, r=1)
+
+    # Parent ikController and PV under _rig_GRP
+    cmds.parent(ikFootControlGrp, pvController + "_grp" ,rigGrp)
     
     # Set SDK visibility
     sdkDriver = switcherLoc[0] + ".FKIK_Mode"
