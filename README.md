@@ -28,14 +28,14 @@ Oh well, you know...
 
 Lots of stuff
 
-* Better foot attributes
-* Clavicle support
-* Tweaks about pole vectors
-* More complex leg and arm chains
-* Add Squash and Stretch option
-* Color choice (by your own)
-* Better controllers
-* Auto hierarchy in outliner
+- [x] Better foot attributes
+- [x] Clavicle support
+- [x] Tweaks about pole vectors
+- [x] More complex leg and arm chains
+- [x] Add Squash and Stretch option
+- [x] Color choice (by your own)
+- [x] Better controllers
+- [x] Auto hierarchy in outliner
 
 ## How to install
 Save *IKFK_Builder* in your maya scripts folder with *ctrlUI_lib*

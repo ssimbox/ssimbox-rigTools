@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+from ctrlUI_lib import createHandCtrl
 
 def duplicateHandChain(*args):
 
@@ -73,17 +74,17 @@ def duplicateHandChain(*args):
     for x in range(handJointCount):
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
-                cmds.parent((completeHierarchy[x] + "_rig"), (completeHierarchy[1] + "_rig"))
+                cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[1] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[1] + "_LOC")
                 hierarchyOrder += fingerChainLength
 
                 if hierarchyOrder == handJointCount:
-                    cmds.parent((completeHierarchy[x] + "_rig"), (completeHierarchy[0] + "_rig"))
+                    cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                     cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
                     
             else:
     
-                cmds.parent((completeHierarchy[x] + "_rig"), (completeHierarchy[0] + "_rig"))
+                cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
                 if x == 0:
                     continue
@@ -92,11 +93,11 @@ def duplicateHandChain(*args):
         # create connections between _rig hierachy and locators
         if x == 0:
             continue 
-        # Skip 0 index because hand joint it's not important into connections and orient constraints.
+        # Skip 0 index because hand root joint it's not important into connections and orient constraints.
         # ONLY FINGERS  
-        cmds.connectAttr((completeHierarchy[x] + "_rig.translate"), completeHierarchy[x] + ".translate") 
-        cmds.connectAttr((completeHierarchy[x] + "_rig.rotate"), completeHierarchy[x] + ".rotate")
-        cmds.orientConstraint((completeHierarchy[x] + "_LOC"), (completeHierarchy[x] + "_rig"))
+        cmds.connectAttr(completeHierarchy[x] + "_rig.translate", completeHierarchy[x] + ".translate") 
+        cmds.connectAttr(completeHierarchy[x] + "_rig.rotate", completeHierarchy[x] + ".rotate")
+        cmds.orientConstraint(completeHierarchy[x] + "_LOC", completeHierarchy[x] + "_rig")
             
     cmds.parent((completeHierarchy[0] + "_rig"), world = True)
     #cmds.rename(completeHierarchy[0] + "_anim_grp", jointSide + "fingers_grp")
@@ -115,21 +116,7 @@ def duplicateHandChain(*args):
         numbers.append(i) 
     
     # parallelepipedo tipo piramide
-    attributeController = cmds.curve(d=1, p=[(-1.6691866981302321, -0.8320895690179206, -4.590263419858138),
-                                            (1.6691866981302317, -0.8320895690179206, -4.590263419858138),
-                                            (1.6691866981302317, -0.8320895690179206, 4.590263419858138),
-                                            (-1.6691866981302321, -0.8320895690179206, 4.590263419858138),
-                                            (0.0, 0.8318404710680585, 4.590263419858138),
-                                            (1.6691866981302317, -0.8320895690179206, 4.590263419858138),
-                                            (1.6691866981302317, -0.8320895690179206, -4.590263419858138),
-                                            (0.0, 0.8320895690179206, -4.590263419858138),
-                                            (-1.6691866981302321, -0.8320895690179206, -4.590263419858138),
-                                            (-1.6691866981302321, -0.8320895690179206, 4.590263419858138),
-                                            (-1.6691866981302321, -0.8320895690179206, -4.590263419858138),
-                                            (-1.6691866981302321, -0.8320895690179206, -4.590263419858138),
-                                            (0.0, 0.8320895690179206, -4.590263419858138),
-                                            (0.0, 0.8318404710680585, 4.590263419858138)], 
-                                            k=[0,1,2,3,4,5,6,7,8,9,10,11,12,13], n= jointSide + "fingers_controller_anim")
+    attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
 
     attributeControllerGrp = cmds.group(em=1, n=attributeController + "_grp")
     cmds.parent(attributeController, attributeControllerGrp)
