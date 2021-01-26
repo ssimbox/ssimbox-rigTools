@@ -106,7 +106,7 @@ def duplicateHandChain(*args):
     # Create attribute on controller
     
     xyz = ["X", "Y", "Z"]
-    fingers = ["thumb", "index", "mid", "ring", "pinkie"]
+    fingers = ["thumb", "index"]
     numbers = []
     
     # Create attributes based on the length of the single fingers chain. Skip 0
@@ -115,10 +115,15 @@ def duplicateHandChain(*args):
             continue
         numbers.append(i) 
 
-    rd5X = cmds.radioButton(rd5, q=1)
-    print rd5X
-    if rd5X == 1:
-        print ("ciao")
+    if cmds.radioButton(rd3, q=1, sl=1):
+        fingers.append("mid")
+    if cmds.radioButton(rd4, q=1, sl=1):
+        fingers.append("mid")
+        fingers.append("ring")
+    if cmds.radioButton(rd5, q=1, sl=1):
+        fingers.append("mid")
+        fingers.append("ring")
+        fingers.append("pinkie")
     
     # parallelepipedo tipo piramide
     attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
@@ -259,10 +264,10 @@ def showUI():
                                     ],
                     
                     attachPosition = [(axisMenu, "left", 100, 0),
-                                      (rd3, "left", 15,0),
-                                      (rd4, "left", 80,0),
-                                      (rd5, "left", 140,0),
-                                      (rd6, "left", 200,0),
+                                      (rd3, "left", 0,5),
+                                      (rd4, "left", 0,30),
+                                      (rd5, "left", 0,55),
+                                      (rd6, "left", 0,80),
                     
                     ])
    
