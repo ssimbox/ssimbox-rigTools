@@ -114,6 +114,11 @@ def duplicateHandChain(*args):
         if i == 0:
             continue
         numbers.append(i) 
+
+    rd5X = cmds.radioButton(rd5, q=1)
+    print rd5X
+    if rd5X == 1:
+        print ("ciao")
     
     # parallelepipedo tipo piramide
     attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
@@ -189,6 +194,7 @@ def showUI():
     global fingersCountField
     global fingersCheckBox
     global axisMenu
+    global rd3, rd4, rd5, rd6
 
     # Close the previous window
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
@@ -198,7 +204,7 @@ def showUI():
 
     # Input field for finger length
     txtFingersChain = cmds.text("Joint per finger")
-    fingersCountField = cmds.intField(minValue=4    , w = 20)
+    fingersCountField = cmds.intField(minValue=4, w = 20)
     
     # Checkbox 
     fingersCheckBox = cmds.checkBox(label = "Support joint?", value = False)
@@ -211,6 +217,14 @@ def showUI():
     
     # Separators
     separator01 = cmds.separator(h=5)
+    separator02 = cmds.separator(h=5)
+    
+    # Radiobutton
+    fingerNumber = cmds.radioCollection()
+    rd3 = cmds.radioButton(label='Three')
+    rd4 = cmds.radioButton(label='Four')
+    rd5 = cmds.radioButton(label='Five', sl=1)
+    rd6 = cmds.radioButton(label='Six')
 
     
     # Button to execute
@@ -223,8 +237,13 @@ def showUI():
                                   (fingersCountField, "top", 6), (fingersCountField, "right", 115), (fingersCountField, "left", 90),
                                   (fingersCheckBox, "top", 8), (fingersCheckBox, "right", 5),
                                   (separator01, "left", 5), (separator01, "right", 5), 
+                                  (separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
                                   (axisMenu, "left", 10),
+                                  (rd3, "left", 10),
+                                  (rd4, "left", 10),
+                                  (rd5, "left", 10),
+                                  (rd6, "left", 10),
                                   #----------------------
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
@@ -232,11 +251,20 @@ def showUI():
                     attachControl = [(separator01, "top", 5, fingersCountField),
                                      (separator01, "top", 10, fingersCheckBox),
                                      (axisMenu, "top", 5, separator01),
+                                     (separator02, "top", 5, axisMenu),
+                                     (rd3, "top", 5, separator02),
+                                     (rd4, "top", 5, separator02),
+                                     (rd5, "top", 5, separator02),
+                                     (rd6, "top", 5, separator02),
                                     ],
                     
-                    attachPosition = [(axisMenu, "left", 100, 0)]
-    
-                    )
+                    attachPosition = [(axisMenu, "left", 100, 0),
+                                      (rd3, "left", 15,0),
+                                      (rd4, "left", 80,0),
+                                      (rd5, "left", 140,0),
+                                      (rd6, "left", 200,0),
+                    
+                    ])
    
     cmds.showWindow(myWin)
 
