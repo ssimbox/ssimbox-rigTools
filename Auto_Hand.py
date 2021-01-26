@@ -106,7 +106,7 @@ def duplicateHandChain(*args):
     # Create attribute on controller
     
     xyz = ["X", "Y", "Z"]
-    fingers = ["thumb", "index"]
+    fingers = []
     numbers = []
     
     # Create attributes based on the length of the single fingers chain. Skip 0
@@ -115,15 +115,28 @@ def duplicateHandChain(*args):
             continue
         numbers.append(i) 
 
+    thumbASD = cmds.checkBox(thumbCheckBox_UI, q=1, v=1)
+
+    if thumbASD == 1:
+        fingers.insert(0, "thumb")
+    
     if cmds.radioButton(rd3, q=1, sl=1):
+        fingers.append("index")
         fingers.append("mid")
+        if thumbASD == 0: fingers.append("ring")
     if cmds.radioButton(rd4, q=1, sl=1):
+        fingers.append("index")
         fingers.append("mid")
         fingers.append("ring")
+        if thumbASD == 0: fingers.append("pinkie")
+    """
     if cmds.radioButton(rd5, q=1, sl=1):
+        fingers.append("index")
         fingers.append("mid")
         fingers.append("ring")
         fingers.append("pinkie")
+    """
+    print (fingers)
     
     # parallelepipedo tipo piramide
     attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
@@ -200,6 +213,7 @@ def showUI():
     global fingersCheckBox
     global axisMenu
     global rd3, rd4, rd5, rd6
+    global thumbCheckBox_UI
 
     # Close the previous window
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
@@ -231,6 +245,7 @@ def showUI():
     rd5 = cmds.radioButton(label='Five', sl=1)
     rd6 = cmds.radioButton(label='Six')
 
+    thumbCheckBox_UI = cmds.checkBox("thumb?",v=0)
     
     # Button to execute
     execButton = cmds.button(label="Duplicate hand chain", command=duplicateHandChain)
@@ -238,9 +253,9 @@ def showUI():
     
     #formlayout test
     cmds.formLayout(mainLayout, e=1,
-                    attachForm = [(txtFingersChain, "top", 8),(txtFingersChain, "left", 5),
-                                  (fingersCountField, "top", 6), (fingersCountField, "right", 115), (fingersCountField, "left", 90),
-                                  (fingersCheckBox, "top", 8), (fingersCheckBox, "right", 5),
+                    attachForm = [(txtFingersChain, "top", 8), (txtFingersChain, "left", 5),
+                                  (fingersCountField, "top", 6), (fingersCountField, "right", 105), (fingersCountField, "left", 90),
+                                  (fingersCheckBox, "top", 8), (fingersCheckBox, "right", 40),
                                   (separator01, "left", 5), (separator01, "right", 5), 
                                   (separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
@@ -253,24 +268,19 @@ def showUI():
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
 
-                    attachControl = [(separator01, "top", 5, fingersCountField),
+                    attachControl = [(fingersCheckBox, "left", 5, fingersCountField),
+                                     (separator01, "top", 5, fingersCountField),
                                      (separator01, "top", 10, fingersCheckBox),
                                      (axisMenu, "top", 5, separator01),
                                      (separator02, "top", 5, axisMenu),
                                      (rd3, "top", 5, separator02),
-                                     (rd4, "top", 5, separator02),
-                                     (rd5, "top", 5, separator02),
-                                     (rd6, "top", 5, separator02),
-                                    ],
-                    
-                    attachPosition = [(axisMenu, "left", 100, 0),
-                                      (rd3, "left", 0,5),
-                                      (rd4, "left", 0,30),
-                                      (rd5, "left", 0,55),
-                                      (rd6, "left", 0,80),
-                    
-                    ])
-   
+                                     (rd4, "top", 5, separator02), (rd4, "left", 5, rd3),
+                                     (rd5, "top", 5, separator02), (rd5, "left", 5, rd4),
+                                     (rd6, "top", 5, separator02), (rd6, "left", 5, rd5),
+                                     (thumbCheckBox_UI, "left", 10, rd6), (thumbCheckBox_UI, "top", 5, separator02),
+                                    ]
+                                    )
+
     cmds.showWindow(myWin)
 
 showUI()
