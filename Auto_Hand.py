@@ -82,10 +82,12 @@ def duplicateHandChain(*args):
                     cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                     cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
                     
+                    
             else:
     
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
+                
                 if x == 0:
                     continue
                 hierarchyOrder += fingerChainLength
@@ -120,22 +122,15 @@ def duplicateHandChain(*args):
     if thumbASD == 1:
         fingers.insert(0, "thumb")
     
-    if cmds.radioButton(rd3, q=1, sl=1):
+    if cmds.radioButton(rd2, q=1, sl=1):
         fingers.append("index")
         fingers.append("mid")
         if thumbASD == 0: fingers.append("ring")
-    if cmds.radioButton(rd4, q=1, sl=1):
+    if cmds.radioButton(rd3, q=1, sl=1):
         fingers.append("index")
         fingers.append("mid")
         fingers.append("ring")
         if thumbASD == 0: fingers.append("pinkie")
-    """
-    if cmds.radioButton(rd5, q=1, sl=1):
-        fingers.append("index")
-        fingers.append("mid")
-        fingers.append("ring")
-        fingers.append("pinkie")
-    """
     print (fingers)
     
     # parallelepipedo tipo piramide
@@ -182,7 +177,7 @@ def duplicateHandChain(*args):
                 allNewAttr = singleFinger + str(n) + coord
                 
                 cmds.addAttr(attributeController, longName = allNewAttr, hidden = False, k = True, r = True, s = True)
-                cmds.connectAttr(( attributeController + "." + allNewAttr), (ctrlAnims + coord ))
+                cmds.connectAttr(( attributeController + "." + allNewAttr), (ctrlAnims + coord))
 
     selectAxis = cmds.optionMenu("axisMenu", q = 1, v = 1) 
 
@@ -212,7 +207,7 @@ def showUI():
     global fingersCountField
     global fingersCheckBox
     global axisMenu
-    global rd3, rd4, rd5, rd6
+    global rd3, rd4, rd5, rd2
     global thumbCheckBox_UI
 
     # Close the previous window
@@ -239,11 +234,11 @@ def showUI():
     separator02 = cmds.separator(h=5)
     
     # Radiobutton
-    fingerNumber = cmds.radioCollection()
+    cmds.radioCollection()
+    rd2 = cmds.radioButton(label='Two')
     rd3 = cmds.radioButton(label='Three')
-    rd4 = cmds.radioButton(label='Four')
-    rd5 = cmds.radioButton(label='Five', sl=1)
-    rd6 = cmds.radioButton(label='Six')
+    rd4 = cmds.radioButton(label='Four', sl=1)
+    rd5 = cmds.radioButton(label='Five')
 
     thumbCheckBox_UI = cmds.checkBox("thumb?",v=0)
     
@@ -260,10 +255,10 @@ def showUI():
                                   (separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
                                   (axisMenu, "left", 10),
+                                  (rd2, "left", 10),
                                   (rd3, "left", 10),
                                   (rd4, "left", 10),
                                   (rd5, "left", 10),
-                                  (rd6, "left", 10),
                                   #----------------------
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
@@ -273,11 +268,11 @@ def showUI():
                                      (separator01, "top", 10, fingersCheckBox),
                                      (axisMenu, "top", 5, separator01),
                                      (separator02, "top", 5, axisMenu),
-                                     (rd3, "top", 5, separator02),
+                                     (rd2, "top", 5, separator02),
+                                     (rd3, "top", 5, separator02), (rd3, "left", 5, rd2),
                                      (rd4, "top", 5, separator02), (rd4, "left", 5, rd3),
                                      (rd5, "top", 5, separator02), (rd5, "left", 5, rd4),
-                                     (rd6, "top", 5, separator02), (rd6, "left", 5, rd5),
-                                     (thumbCheckBox_UI, "left", 10, rd6), (thumbCheckBox_UI, "top", 5, separator02),
+                                     (thumbCheckBox_UI, "left", 10, rd5), (thumbCheckBox_UI, "top", 5, separator02),
                                     ]
                                     )
 
