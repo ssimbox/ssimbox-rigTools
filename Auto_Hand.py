@@ -118,7 +118,7 @@ def duplicateHandChain(*args):
         if x == 0: 
             continue
 
-        # Create divider on the controller. 
+        # Create "divider attribute" on the controller. 
         if x == topAttribute: 
             cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
             topAttribute += fingerChainLength
@@ -131,77 +131,26 @@ def duplicateHandChain(*args):
         # Create coords for every finger 
         for coord in ["X", "Y", "Z"]:
             cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
-            cmds.connectAttr(attributeController +"."+ completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
-
-
-        #deleteVar += fingerChainLength
-
+            cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
     
+    deleteVar = 0
+    deleteVar += fingerChainLength
+    xyz = ["X", "Y", "Z"]
+    for x in range(handJointCount):
+        for coord in xyz:
+
+            # Skip 0 index
+            if x == 0:
+                continue
+
+            # Skip last joints based on finger chain length 
+            if x == deleteVar:
+                deleteVar += fingerChainLength
+                continue
+
+
     # Setup controller attributes and space
     for coord in ["X", "Y", "Z"]:
-        cmds.setAttr(attributeController + ".translate" + coord, k=0, l=1)
-        cmds.setAttr(attributeController + ".rotate" + coord, k=0, l=1)
-        cmds.setAttr(attributeController + ".scale" + coord, k=0, l=1)
-        cmds.setAttr(attributeController + ".visibility", k=0, l=1)
-        cmds.scale(0.5,0.5,0.5, attributeControllerGrp)
-
-    """
-    for x in range(handJointCount):
-        for r in ["X", "Y", "Z"]:      
-            #print (deleteVar,x)
-            if x == deleteVar:
-                #cmds.deleteAttr(attributeController, attribute=completeHierarchy[x])
-                #print("list -->",completeHierarchy[deleteVar]+r)
-                deleteVar += fingerChainLength
-            print ("deleteVar", deleteVar)
-            print (x,completeHierarchy[deleteVar]+r)
-    """        
-            #cmds.deleteAttr(attributeController, attribute=completeHierarchy[deleteVar]+r)
-            
-    cmds.parent((completeHierarchy[0] + "_rig"), world = True)
-    #cmds.rename(completeHierarchy[0] + "_anim_grp", jointSide + "fingers_grp")
-    
-    # -----------------------------------------------------
-    # Create attribute on controller
-    """
-    xyz = ["X", "Y", "Z"]
-    fingers = []
-    numbers = []
-    
-    # Create attributes based on the length of the single fingers chain. Skip 0
-    for i in range(fingerChainLength):
-        if i == 0:
-            continue
-        numbers.append(i) 
-
-    thumbASD = cmds.checkBox(thumbCheckBox_UI, q=1, v=1)
-
-    if thumbASD == 1:
-        fingers.insert(0, "thumb")
-    
-    if cmds.radioButton(rd2, q=1, sl=1):
-        fingers.append("index")
-        fingers.append("mid")
-        if thumbASD == 0: fingers.append("ring")
-    if cmds.radioButton(rd3, q=1, sl=1):
-        fingers.append("index")
-        fingers.append("mid")
-        fingers.append("ring")
-        if thumbASD == 0: fingers.append("pinkie")
-    print (fingers)
-    
-    # parallelepipedo tipo piramide
-    attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
-
-    attributeControllerGrp = cmds.group(em=1, n=attributeController + "_grp")
-    cmds.parent(attributeController, attributeControllerGrp)
-    cmds.delete(cmds.pointConstraint(completeHierarchy[0], attributeControllerGrp))
-    #cmds.delete(cmds.pointConstraint(completeHierarchy[0], attributeController))
-    #cmds.rotate(0,0,-30,attributeControllerGrp, r=1)
-    cmds.color(attributeController, rgb=controllerColor)
-    
-    # Setup controller attributes and space
-    for coord in xyz:
         cmds.setAttr(attributeController + ".translate" + coord, k=0, l=1)
         cmds.setAttr(attributeController + ".rotate" + coord, k=0, l=1)
         cmds.setAttr(attributeController + ".scale" + coord, k=0, l=1)
@@ -217,56 +166,15 @@ def duplicateHandChain(*args):
         cmds.move(-6,0,0, attributeControllerGrp, r=1)
 
     cmds.parentConstraint(completeHierarchy[0], attributeControllerGrp, mo=1)
-
-    # Create attributes
-    cmds.addAttr(attributeController, ln = "Fingers_Shorcuts", k = 1, r = 1, s = 1, at = "enum", en = "------")
-    cmds.addAttr(attributeController, ln = "Fist", k = 1, r = 1, s = 1, at = "float")
-    cmds.addAttr(attributeController, ln = "Spread", k = 1, r = 1, s = 1, at = "float")
-    
-    for singleFinger in fingers:
-
-        cmds.addAttr(attributeController, longName = singleFinger, k=True, readable = True, 
-                        storable = True, attributeType = "enum", enumName = "------")
-        cmds.setAttr(attributeController + "." + singleFinger, k=False, channelBox = 1)
-        for n in numbers:
-            for coord in xyz: # Three ctrlAnims only for testing hehehehe
-                ctrlAnims =  jointSide + singleFinger + str(n) + "_LOC.rotate"
-                allNewAttr = singleFinger + str(n) + coord # index1X
-                
-                cmds.addAttr(attributeController, longName = allNewAttr, hidden = False, k = True, r = True, s = True)
-                cmds.connectAttr(( attributeController + "." + allNewAttr), (ctrlAnims + coord))
-
-
-    selectAxis = cmds.optionMenu("axisMenu", q = 1, v = 1) 
-
-    # Delete some attributes based on the bending axis
-    for removeFinger in fingers:
-        for removeNumber in numbers[1:]:
-
-            if selectAxis == "X":
-                indexFirstAxis = 1
-                indexSecondAxis = 2
-            elif selectAxis == "Y":
-                indexFirstAxis = 0
-                indexSecondAxis = 2
-            elif selectAxis == "Z":
-                indexFirstAxis = 0
-                indexSecondAxis = 1 
             
-            deleteFirstAxis = removeFinger + str(removeNumber) + xyz[indexFirstAxis]
-            deleteSecondAxis = removeFinger + str(removeNumber) + xyz[indexSecondAxis]
-            
-            cmds.deleteAttr(attributeController, attribute = deleteFirstAxis) 
-            cmds.deleteAttr(attributeController, attribute = deleteSecondAxis)
-    """
+    cmds.parent((completeHierarchy[0] + "_rig"), world = True)
+ 
     cmds.select(attributeController)
 
 def showUI():
     global fingersCountField
     global fingersCheckBox
     global axisMenu
-    global rd3, rd4, rd5, rd2
-    global thumbCheckBox_UI
 
     # Close the previous window
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
