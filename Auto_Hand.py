@@ -104,14 +104,47 @@ def duplicateHandChain(*args):
         cmds.connectAttr(completeHierarchy[x] + "_rig.rotate", completeHierarchy[x] + ".rotate")
         cmds.orientConstraint(completeHierarchy[x] + "_LOC", completeHierarchy[x] + "_rig")
     
-    deleteVar = fingerChainLength
+    # Create attributes
+    cmds.addAttr(attributeController, ln = "Fingers_Shorcuts", k = 1, r = 1, s = 1, at = "enum", en = "------")
+    cmds.addAttr(attributeController, ln = "Fist", k = 1, r = 1, s = 1, at = "float")
+    cmds.addAttr(attributeController, ln = "Spread", k = 1, r = 1, s = 1, at = "float")
+
+    selectAxis = cmds.optionMenu("axisMenu", q = 1, v = 1) 
+    deleteVar = 0
+    topAttribute = 1
+    deleteVar += fingerChainLength
     for x in range(handJointCount):
-        if x == 0:
+        # Skip root hand joint
+        if x == 0: 
             continue
-        cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )      
-        for r in ["X", "Y", "Z"]:
-            cmds.addAttr(attributeController, ln=completeHierarchy[x] + r, k=1, s=1, r=1)
-            cmds.connectAttr(attributeController +"."+ completeHierarchy[x] + r, completeHierarchy[x] + "_LOC.rotate" + r)
+
+        # Create divider on the controller. 
+        if x == topAttribute: 
+            cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
+            topAttribute += fingerChainLength
+        
+        # Delete last joint as attribute. Based on finger chain length. Usually I don't use it as transfom
+        if x == deleteVar: 
+            deleteVar += fingerChainLength
+            continue
+
+        # Create coords for every finger 
+        for coord in ["X", "Y", "Z"]:
+            cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
+            cmds.connectAttr(attributeController +"."+ completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
+
+
+        #deleteVar += fingerChainLength
+
+    
+    # Setup controller attributes and space
+    for coord in ["X", "Y", "Z"]:
+        cmds.setAttr(attributeController + ".translate" + coord, k=0, l=1)
+        cmds.setAttr(attributeController + ".rotate" + coord, k=0, l=1)
+        cmds.setAttr(attributeController + ".scale" + coord, k=0, l=1)
+        cmds.setAttr(attributeController + ".visibility", k=0, l=1)
+        cmds.scale(0.5,0.5,0.5, attributeControllerGrp)
+
     """
     for x in range(handJointCount):
         for r in ["X", "Y", "Z"]:      
@@ -258,15 +291,6 @@ def showUI():
     separator01 = cmds.separator(h=5)
     separator02 = cmds.separator(h=5)
     
-    # Radiobutton
-    cmds.radioCollection()
-    rd2 = cmds.radioButton(label='Two')
-    rd3 = cmds.radioButton(label='Three')
-    rd4 = cmds.radioButton(label='Four', sl=1)
-    rd5 = cmds.radioButton(label='Five')
-
-    thumbCheckBox_UI = cmds.checkBox("thumb?",v=0)
-    
     # Button to execute
     execButton = cmds.button(label="Duplicate hand chain", command=duplicateHandChain)
   
@@ -280,10 +304,6 @@ def showUI():
                                   (separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
                                   (axisMenu, "left", 10),
-                                  (rd2, "left", 10),
-                                  (rd3, "left", 10),
-                                  (rd4, "left", 10),
-                                  (rd5, "left", 10),
                                   #----------------------
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
@@ -293,13 +313,7 @@ def showUI():
                                      (separator01, "top", 10, fingersCheckBox),
                                      (axisMenu, "top", 5, separator01),
                                      (separator02, "top", 5, axisMenu),
-                                     (rd2, "top", 5, separator02),
-                                     (rd3, "top", 5, separator02), (rd3, "left", 5, rd2),
-                                     (rd4, "top", 5, separator02), (rd4, "left", 5, rd3),
-                                     (rd5, "top", 5, separator02), (rd5, "left", 5, rd4),
-                                     (thumbCheckBox_UI, "left", 10, rd5), (thumbCheckBox_UI, "top", 5, separator02),
-                                    ]
-                                    )
+                                    ])
 
     cmds.showWindow(myWin)
 
