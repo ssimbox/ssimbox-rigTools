@@ -94,6 +94,8 @@ def duplicateHandChain(*args):
     for x in range(handJointCount):
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
+                if x ==1:
+                    continue
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[1] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[1] + "_LOC")
                 
@@ -144,10 +146,12 @@ def duplicateHandChain(*args):
     fingersGRP = cmds.group(em=1, n=jointSide + "fingers_grp")
 
     for x in range(handJointCount):
+        # start joint
         if x == newvar:
             startik = cmds.joint(n=completeHierarchy[x] + "_ik_start")
             cmds.delete(cmds.parentConstraint(completeHierarchy[x], startik))
             cmds.parent(startik, w=1)
+        # end joint
         if x == newvar + (fingerChainLength-1):
             endik = cmds.joint(n=completeHierarchy[x] + "_ik_end")
             cmds.delete(cmds.parentConstraint(completeHierarchy[x], endik))
@@ -159,6 +163,7 @@ def duplicateHandChain(*args):
             cmds.parent(completeHierarchy[newvar] + "_ik_start", completeHierarchy[0] + "_rig")
             newvar += fingerChainLength
 
+    cmds.delete(jointSide + "palm_anim_grp")
 
     # Setup controller attributes and space
     for coord in ["X", "Y", "Z"]:
