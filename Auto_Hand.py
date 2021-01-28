@@ -7,11 +7,14 @@ def duplicateHandChain(*args):
     global fingersCheckBox
     global axisMenu
 
+
     rootSel = cmds.ls(sl = True)[0]
     completeHierarchy = cmds.listRelatives(rootSel, ad = True)
     completeHierarchy.append(rootSel)
     completeHierarchy.reverse()
     jointSide = rootSel[0:2]
+    
+    controllerColor = None
     if jointSide == "l_": controllerColor = rgb=(0, 0, 255)
     elif jointSide == "r_": controllerColor = rgb=(255, 0, 0)
 
@@ -62,7 +65,7 @@ def duplicateHandChain(*args):
             cmds.delete(completeHierarchy[0] + "_driver_grp")
             break
         
-    attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
+    attributeController = createHandCtrl(nome=completeHierarchy[0] + "_fingers_ctrl_anim")
     attributeControllerGrp = cmds.group(em=1, n=attributeController + "_grp")
     cmds.parent(attributeController, attributeControllerGrp)
     cmds.delete(cmds.pointConstraint(completeHierarchy[0], attributeControllerGrp))
@@ -70,10 +73,12 @@ def duplicateHandChain(*args):
     # order the _RIG hierarchy with locators
     if supportJointCheckbox == 1:
         hierarchyOrder = 2 # if supportJoint exists, start the count from 2
-        tempvar = 1 + fingerChainLength
+        attributeCount = 1 + fingerChainLength
+        fingerBoneCount = 2
     else:
         hierarchyOrder = 1 # if supportJoint exists, start the count from 1
-        tempvar = fingerChainLength
+        attributeCount = fingerChainLength
+        fingerBoneCount = 1
 
     xyz = ["X", "Y", "Z"]
 
@@ -89,6 +94,7 @@ def duplicateHandChain(*args):
     for x in range(handJointCount):
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
+
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[1] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[1] + "_LOC")
                 
@@ -104,17 +110,17 @@ def duplicateHandChain(*args):
                 cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
-
+                
                 # Skin hand root joint
                 if x == 0:
                     continue
                 hierarchyOrder += fingerChainLength
         
         # create connections between _rig hierachy and locators
+        
+        # Skip 0 index because hand root joint it's not important into connections and orient constraints.
         if x == 0:
             continue 
-        # Skip 0 index because hand root joint it's not important into connections and orient constraints.
-        # ONLY FINGERS  
         cmds.connectAttr(completeHierarchy[x] + "_rig.translate", completeHierarchy[x] + ".translate") 
         cmds.connectAttr(completeHierarchy[x] + "_rig.rotate", completeHierarchy[x] + ".rotate")
         cmds.orientConstraint(completeHierarchy[x] + "_LOC", completeHierarchy[x] + "_rig")
@@ -123,65 +129,41 @@ def duplicateHandChain(*args):
         if supportJointCheckbox == 1:
             if x == 1:
                 continue
-
+        
         for coord in xyz:
-            if x == tempvar:
+            if x == attributeCount:
                 continue
             cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
             cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
         
-        if x == tempvar:
-            tempvar += fingerChainLength
-            #print((attributeController + "." + completeHierarchy[x] + coord),(completeHierarchy[x] + "_LOC.rotate" + coord))
+        if x == attributeCount:
+            attributeCount += fingerChainLength
 
+    global startik
+    fingersGRP = cmds.group(em=1, n=jointSide + "fingers_grp")
 
-    """selectAxis = cmds.optionMenu("axisMenu", q = 1, v = 1) 
-    if supportJointCheckbox == 1: deleteVar = 0
-    else: deleteVar = 1
-    if supportJointCheckbox ==1: topAttribute = 1 
-    else: topAttribute = 2
-    
-    deleteVar += fingerChainLength
     for x in range(handJointCount):
-        # Skip root hand joint
-        if x == 0: 
-            continue
+        # Start joint
+        # fingerBoneCount is useful to understand the first finger bone for each finger
+        if x == fingerBoneCount:
+            startik = cmds.joint(n=completeHierarchy[x] + "_ik_start")
+            cmds.delete(cmds.parentConstraint(completeHierarchy[x], startik))
+            cmds.parent(startik, w=1)
+        # end joint
+        # fingerBoneCount + (fingerChainLength-1) is useful to understand the last finger bone for each finger
+        if x == fingerBoneCount + (fingerChainLength-1):
+            endik = cmds.joint(n=completeHierarchy[x] + "_ik_end")
+            cmds.delete(cmds.parentConstraint(completeHierarchy[x], endik))
+            cmds.parent(endik, w=1)
+            cmds.parent(endik, startik)
+            fingerikHandle = cmds.ikHandle(sj=startik, ee=endik, sol="ikSCsolver", n=completeHierarchy[fingerBoneCount] + "_ikHandle")[0]
+            cmds.parent(fingerikHandle, fingersGRP)
+            cmds.parent(completeHierarchy[fingerBoneCount] + "_anim_grp", completeHierarchy[fingerBoneCount] + "_ik_start")
+            cmds.parent(completeHierarchy[fingerBoneCount] + "_ik_start", completeHierarchy[0] + "_rig")
+            fingerBoneCount += fingerChainLength
 
-        if supportJointCheckbox == 1:
-            if x == 2:
-                continue
-
-        # Create "divider attribute" on the controller. 
-        if x == topAttribute: 
-            cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
-            topAttribute += fingerChainLength
-        
-        # Delete last joint as attribute. Based on finger chain length. Usually I don't use it as transfom
-        if x == deleteVar: 
-            deleteVar += fingerChainLength
-            continue
-
-        # Create coords for every finger 
-        for coord in ["X", "Y", "Z"]:
-            cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
-            cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
-    
-    if supportJointCheckbox == 1: deleteVar = 0
-    else: deleteVar = 1
-    deleteVar += fingerChainLength
-    xyz = ["X", "Y", "Z"]
-    for x in range(handJointCount):
-        for coord in xyz:
-
-            # Skip 0 index
-            if x == 0:
-                continue
-
-            # Skip last joints based on finger chain length 
-            if x == deleteVar:
-                deleteVar += fingerChainLength
-                continue"""
-
+    # Delete hand root joint
+    cmds.delete(completeHierarchy[0] + "_anim_grp")
 
     # Setup controller attributes and space
     for coord in ["X", "Y", "Z"]:

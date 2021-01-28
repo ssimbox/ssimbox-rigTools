@@ -28,14 +28,14 @@ Oh well, you know...
 
 Lots of stuff
 
-- [] Better foot attributes
+- [ ] Better foot attributes
 - [x] Clavicle support
-- [] Tweaks about pole vectors
-- [] More complex leg and arm chains
-- [] Add Squash and Stretch option
-- [] Color choice (by your own)
-- [] Better controllers
-- [] Auto hierarchy in outliner
+- [ ] Tweaks about pole vectors
+- [ ] More complex leg and arm chains
+- [ ] Add Squash and Stretch option
+- [ ] Color choice (by your own)
+- [ ] Better controllers
+- [ ] Auto hierarchy in outliner
 
 ## How to install
 Save *IKFK_Builder* in your maya scripts folder with *ctrlUI_lib*
@@ -52,8 +52,8 @@ IKFK_Builder.showUI()
 
 For now very simple stuff but it could be very useful to create an usable hand with fingers control.
 
-* Various length fingers
-* Fingers controller creation with attributes to control them
+- Various length fingers
+- Fingers controller creation with attributes to control them
 
 P.S. Another rule: if you use what I call _supportJoint_ (watch gif second shot) please use this hierarchy
 
@@ -64,8 +64,10 @@ P.S. Another rule: if you use what I call _supportJoint_ (watch gif second shot)
 
 ## To-Do list
 
-* IK Hand - Actually it started all for this, to create automatically an IK Hand. This is my main goal
-* Various hand builds - My objective was to build the human hand (five fingers) but could be useful have three, four or six fingers.
+- [x] IK Hand - Actually it started all for this, to create automatically an IK Hand. This is my main goal
+- [x] Various hand builds - My objective was to build the human hand (five fingers) but could be useful have three, four or six fingers.
+- [ ] Change attribute order
+- [ ] Delete some useless attributes
 
 ## How to install
 Save *Auto_Hand* in your maya scripts folder
