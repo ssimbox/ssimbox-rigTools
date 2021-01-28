@@ -6,14 +6,15 @@ def duplicateHandChain(*args):
     global fingersCountField
     global fingersCheckBox
     global axisMenu
-    global startik
-    global endik
+
 
     rootSel = cmds.ls(sl = True)[0]
     completeHierarchy = cmds.listRelatives(rootSel, ad = True)
     completeHierarchy.append(rootSel)
     completeHierarchy.reverse()
     jointSide = rootSel[0:2]
+    
+    controllerColor = None
     if jointSide == "l_": controllerColor = rgb=(0, 0, 255)
     elif jointSide == "r_": controllerColor = rgb=(255, 0, 0)
 
@@ -138,20 +139,11 @@ def duplicateHandChain(*args):
             tempvar += fingerChainLength
             #print((attributeController + "." + completeHierarchy[x] + coord),(completeHierarchy[x] + "_LOC.rotate" + coord))
 
-    ikFingers = ["_ik_start", "_ik_end"]
+    global startik
 
-    for ik in ikFingers:
-        for x in range(handJointCount):
-            if x == newvar:
-                ikStart = completeHierarchy[x] + ik
-                newvar += fingerChainLength
-                cmds.joint(n=ikStart)
-                cmds.delete(cmds.parentConstraint(completeHierarchy[x], ikStart))
-            if x == newvar + (fingerChainLength-1):
-                endik = completeHierarchy[x] + ik
-                cmds.joint(n=endik)
-                
-    """for x in range(handJointCount):
+    fingersGRP = cmds.group(em=1, n=jointSide + "fingers_grp")
+
+    for x in range(handJointCount):
         if x == newvar:
             startik = cmds.joint(n=completeHierarchy[x] + "_ik_start")
             cmds.delete(cmds.parentConstraint(completeHierarchy[x], startik))
@@ -161,8 +153,12 @@ def duplicateHandChain(*args):
             cmds.delete(cmds.parentConstraint(completeHierarchy[x], endik))
             cmds.parent(endik, w=1)
             cmds.parent(endik, startik)
-            cmds.ikHandle(sj=startik, ee=endik, sol="ikSCsolver", n=completeHierarchy[x] + "_ikHandle")
-            newvar += fingerChainLength"""
+            xHandles = cmds.ikHandle(sj=startik, ee=endik, sol="ikSCsolver", n=completeHierarchy[newvar] + "_ikHandle")[0]
+            cmds.parent(xHandles, fingersGRP)
+            cmds.parent(completeHierarchy[newvar] + "_anim_grp", completeHierarchy[newvar] + "_ik_start")
+            cmds.parent(completeHierarchy[newvar] + "_ik_start", completeHierarchy[0] + "_rig")
+            newvar += fingerChainLength
+
 
     # Setup controller attributes and space
     for coord in ["X", "Y", "Z"]:
