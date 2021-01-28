@@ -6,6 +6,8 @@ def duplicateHandChain(*args):
     global fingersCountField
     global fingersCheckBox
     global axisMenu
+    global startik
+    global endik
 
     rootSel = cmds.ls(sl = True)[0]
     completeHierarchy = cmds.listRelatives(rootSel, ad = True)
@@ -71,9 +73,11 @@ def duplicateHandChain(*args):
     if supportJointCheckbox == 1:
         hierarchyOrder = 2 # if supportJoint exists, start the count from 2
         tempvar = 1 + fingerChainLength
+        newvar = 2
     else:
         hierarchyOrder = 1 # if supportJoint exists, start the count from 1
         tempvar = fingerChainLength
+        newvar = 1
 
     xyz = ["X", "Y", "Z"]
 
@@ -104,7 +108,7 @@ def duplicateHandChain(*args):
                 cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
-
+                
                 # Skin hand root joint
                 if x == 0:
                     continue
@@ -134,54 +138,31 @@ def duplicateHandChain(*args):
             tempvar += fingerChainLength
             #print((attributeController + "." + completeHierarchy[x] + coord),(completeHierarchy[x] + "_LOC.rotate" + coord))
 
+    ikFingers = ["_ik_start", "_ik_end"]
 
-    """selectAxis = cmds.optionMenu("axisMenu", q = 1, v = 1) 
-    if supportJointCheckbox == 1: deleteVar = 0
-    else: deleteVar = 1
-    if supportJointCheckbox ==1: topAttribute = 1 
-    else: topAttribute = 2
-    
-    deleteVar += fingerChainLength
-    for x in range(handJointCount):
-        # Skip root hand joint
-        if x == 0: 
-            continue
-
-        if supportJointCheckbox == 1:
-            if x == 2:
-                continue
-
-        # Create "divider attribute" on the controller. 
-        if x == topAttribute: 
-            cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
-            topAttribute += fingerChainLength
-        
-        # Delete last joint as attribute. Based on finger chain length. Usually I don't use it as transfom
-        if x == deleteVar: 
-            deleteVar += fingerChainLength
-            continue
-
-        # Create coords for every finger 
-        for coord in ["X", "Y", "Z"]:
-            cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
-            cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
-    
-    if supportJointCheckbox == 1: deleteVar = 0
-    else: deleteVar = 1
-    deleteVar += fingerChainLength
-    xyz = ["X", "Y", "Z"]
-    for x in range(handJointCount):
-        for coord in xyz:
-
-            # Skip 0 index
-            if x == 0:
-                continue
-
-            # Skip last joints based on finger chain length 
-            if x == deleteVar:
-                deleteVar += fingerChainLength
-                continue"""
-
+    for ik in ikFingers:
+        for x in range(handJointCount):
+            if x == newvar:
+                ikStart = completeHierarchy[x] + ik
+                newvar += fingerChainLength
+                cmds.joint(n=ikStart)
+                cmds.delete(cmds.parentConstraint(completeHierarchy[x], ikStart))
+            if x == newvar + (fingerChainLength-1):
+                endik = completeHierarchy[x] + ik
+                cmds.joint(n=endik)
+                
+    """for x in range(handJointCount):
+        if x == newvar:
+            startik = cmds.joint(n=completeHierarchy[x] + "_ik_start")
+            cmds.delete(cmds.parentConstraint(completeHierarchy[x], startik))
+            cmds.parent(startik, w=1)
+        if x == newvar + (fingerChainLength-1):
+            endik = cmds.joint(n=completeHierarchy[x] + "_ik_end")
+            cmds.delete(cmds.parentConstraint(completeHierarchy[x], endik))
+            cmds.parent(endik, w=1)
+            cmds.parent(endik, startik)
+            cmds.ikHandle(sj=startik, ee=endik, sol="ikSCsolver", n=completeHierarchy[x] + "_ikHandle")
+            newvar += fingerChainLength"""
 
     # Setup controller attributes and space
     for coord in ["X", "Y", "Z"]:
