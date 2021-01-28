@@ -65,7 +65,7 @@ def duplicateHandChain(*args):
             cmds.delete(completeHierarchy[0] + "_driver_grp")
             break
         
-    attributeController = createHandCtrl(nome=jointSide + "fingers_controller_anim")
+    attributeController = createHandCtrl(nome=completeHierarchy[0] + "_fingers_ctrl_anim")
     attributeControllerGrp = cmds.group(em=1, n=attributeController + "_grp")
     cmds.parent(attributeController, attributeControllerGrp)
     cmds.delete(cmds.pointConstraint(completeHierarchy[0], attributeControllerGrp))
@@ -73,12 +73,12 @@ def duplicateHandChain(*args):
     # order the _RIG hierarchy with locators
     if supportJointCheckbox == 1:
         hierarchyOrder = 2 # if supportJoint exists, start the count from 2
-        tempvar = 1 + fingerChainLength
-        newvar = 2
+        attributeCount = 1 + fingerChainLength
+        fingerBoneCount = 2
     else:
         hierarchyOrder = 1 # if supportJoint exists, start the count from 1
-        tempvar = fingerChainLength
-        newvar = 1
+        attributeCount = fingerChainLength
+        fingerBoneCount = 1
 
     xyz = ["X", "Y", "Z"]
 
@@ -94,8 +94,7 @@ def duplicateHandChain(*args):
     for x in range(handJointCount):
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
-                if x ==1:
-                    continue
+
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[1] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[1] + "_LOC")
                 
@@ -118,10 +117,10 @@ def duplicateHandChain(*args):
                 hierarchyOrder += fingerChainLength
         
         # create connections between _rig hierachy and locators
+        
+        # Skip 0 index because hand root joint it's not important into connections and orient constraints.
         if x == 0:
             continue 
-        # Skip 0 index because hand root joint it's not important into connections and orient constraints.
-        # ONLY FINGERS  
         cmds.connectAttr(completeHierarchy[x] + "_rig.translate", completeHierarchy[x] + ".translate") 
         cmds.connectAttr(completeHierarchy[x] + "_rig.rotate", completeHierarchy[x] + ".rotate")
         cmds.orientConstraint(completeHierarchy[x] + "_LOC", completeHierarchy[x] + "_rig")
@@ -130,40 +129,41 @@ def duplicateHandChain(*args):
         if supportJointCheckbox == 1:
             if x == 1:
                 continue
-
+        
         for coord in xyz:
-            if x == tempvar:
+            if x == attributeCount:
                 continue
             cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
             cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
         
-        if x == tempvar:
-            tempvar += fingerChainLength
-            #print((attributeController + "." + completeHierarchy[x] + coord),(completeHierarchy[x] + "_LOC.rotate" + coord))
+        if x == attributeCount:
+            attributeCount += fingerChainLength
 
     global startik
-
     fingersGRP = cmds.group(em=1, n=jointSide + "fingers_grp")
 
     for x in range(handJointCount):
-        # start joint
-        if x == newvar:
+        # Start joint
+        # fingerBoneCount is useful to understand the first finger bone for each finger
+        if x == fingerBoneCount:
             startik = cmds.joint(n=completeHierarchy[x] + "_ik_start")
             cmds.delete(cmds.parentConstraint(completeHierarchy[x], startik))
             cmds.parent(startik, w=1)
         # end joint
-        if x == newvar + (fingerChainLength-1):
+        # fingerBoneCount + (fingerChainLength-1) is useful to understand the last finger bone for each finger
+        if x == fingerBoneCount + (fingerChainLength-1):
             endik = cmds.joint(n=completeHierarchy[x] + "_ik_end")
             cmds.delete(cmds.parentConstraint(completeHierarchy[x], endik))
             cmds.parent(endik, w=1)
             cmds.parent(endik, startik)
-            xHandles = cmds.ikHandle(sj=startik, ee=endik, sol="ikSCsolver", n=completeHierarchy[newvar] + "_ikHandle")[0]
-            cmds.parent(xHandles, fingersGRP)
-            cmds.parent(completeHierarchy[newvar] + "_anim_grp", completeHierarchy[newvar] + "_ik_start")
-            cmds.parent(completeHierarchy[newvar] + "_ik_start", completeHierarchy[0] + "_rig")
-            newvar += fingerChainLength
+            fingerikHandle = cmds.ikHandle(sj=startik, ee=endik, sol="ikSCsolver", n=completeHierarchy[fingerBoneCount] + "_ikHandle")[0]
+            cmds.parent(fingerikHandle, fingersGRP)
+            cmds.parent(completeHierarchy[fingerBoneCount] + "_anim_grp", completeHierarchy[fingerBoneCount] + "_ik_start")
+            cmds.parent(completeHierarchy[fingerBoneCount] + "_ik_start", completeHierarchy[0] + "_rig")
+            fingerBoneCount += fingerChainLength
 
-    cmds.delete(jointSide + "palm_anim_grp")
+    # Delete hand root joint
+    cmds.delete(completeHierarchy[0] + "_anim_grp")
 
     # Setup controller attributes and space
     for coord in ["X", "Y", "Z"]:
