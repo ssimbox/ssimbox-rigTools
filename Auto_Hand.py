@@ -6,7 +6,7 @@ def duplicateHandChain(*args):
     global fingersCountField
     global fingersCheckBox
     global axisMenu
-
+    global completeHierarchy
 
     rootSel = cmds.ls(sl = True)[0]
     completeHierarchy = cmds.listRelatives(rootSel, ad = True)
@@ -21,7 +21,7 @@ def duplicateHandChain(*args):
     handJointCount = len(completeHierarchy)
 
     fingerChainLength = cmds.intField(fingersCountField, q=1, v=1) #number of joints in a single finger
-    supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, v=0) 
+    supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, v=1) 
 
     newListName = ["_rig"]
     handLocatorsName = ["_LOC"]
@@ -44,8 +44,7 @@ def duplicateHandChain(*args):
             cmds.matchTransform(handLocators, completeHierarchy[newLOC])
             cmds.makeIdentity(handLocators, a = 1, t = 0, r = 0, s = 0)
             cmds.setAttr(handLocators + ".scale", 0.1, 0.1, 0.1)
-
-
+    
     # Create group offsets for locators and parent it
     for x in range(handJointCount):
         anim_group = cmds.group(empty=True, name=completeHierarchy[x] + "_anim_grp")
@@ -92,22 +91,25 @@ def duplicateHandChain(*args):
     hierarchyOrder += fingerChainLength
     # Hierarchy printed is in a top-down hierarchy so it's important parent all under hand
     for x in range(handJointCount):
+        
+        attributeName = syntaxFix(x)
+        
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
-
+    
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[1] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[1] + "_LOC")
                 
-                cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
+                cmds.addAttr(attributeController, ln=attributeName, k=1, s=1, r=1, at="enum", enumName = "------" )
                 
                 hierarchyOrder += fingerChainLength
 
                 if hierarchyOrder == handJointCount:
                     cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                     cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
-  
+                    
             else:
-                cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
+                cmds.addAttr(attributeController, ln=attributeName, k=1, s=1, r=1, at="enum", enumName = "------" )
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
                 
@@ -133,8 +135,8 @@ def duplicateHandChain(*args):
         for coord in xyz:
             if x == attributeCount:
                 continue
-            cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
-            cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
+            cmds.addAttr(attributeController, ln=(attributeName + coord), k=1, s=1, r=1)
+            cmds.connectAttr(attributeController + "." + attributeName + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
         
         if x == attributeCount:
             attributeCount += fingerChainLength
@@ -188,6 +190,15 @@ def duplicateHandChain(*args):
     cmds.parent((completeHierarchy[0] + "_rig"), world = True)
  
     cmds.select(attributeController)
+
+
+def syntaxFix(count):
+    if "l_" in completeHierarchy[count]:
+        attributeName = completeHierarchy[count].replace("l_","")
+        return attributeName
+    if "r_" in completeHierarchy[count]:
+        attributeName = completeHierarchy[count].replace("r_","")
+        return attributeName
 
 def showUI():
     global fingersCountField
