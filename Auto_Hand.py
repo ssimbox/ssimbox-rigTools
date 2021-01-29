@@ -21,7 +21,7 @@ def duplicateHandChain(*args):
     handJointCount = len(completeHierarchy)
 
     fingerChainLength = cmds.intField(fingersCountField, q=1, v=1) #number of joints in a single finger
-    supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, v=1) 
+    supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, v=0) 
 
     newListName = ["_rig"]
     handLocatorsName = ["_LOC"]
@@ -85,14 +85,13 @@ def duplicateHandChain(*args):
     cmds.addAttr(attributeController, ln = "Fingers_Shorcuts", k = 1, r = 1, s = 1, at = "enum", en = "------")
     cmds.addAttr(attributeController, ln = "Fist", k = 1, r = 1, s = 1, at = "float")
     cmds.addAttr(attributeController, ln = "Spread", k = 1, r = 1, s = 1, at = "float")
-
-    cmds.addAttr(attributeController, ln=completeHierarchy[1], k=1, s=1, r=1, at="enum", enumName = "------" )
     
     hierarchyOrder += fingerChainLength
     # Hierarchy printed is in a top-down hierarchy so it's important parent all under hand
     for x in range(handJointCount):
         
-        attributeName = syntaxFix(x)
+        attributeName = syntaxFix(jointSide, x)
+        if x == 1: cmds.addAttr(attributeController, ln=attributeName, k=1, s=1, r=1, at="enum", enumName = "------" )
         
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
@@ -128,6 +127,8 @@ def duplicateHandChain(*args):
         cmds.orientConstraint(completeHierarchy[x] + "_LOC", completeHierarchy[x] + "_rig")
         
         # Create attributes
+        
+        # Skip supportJoint attribute
         if supportJointCheckbox == 1:
             if x == 1:
                 continue
@@ -192,14 +193,10 @@ def duplicateHandChain(*args):
     cmds.select(attributeController)
 
 
-def syntaxFix(count):
-    if "l_" in completeHierarchy[count]:
-        attributeName = completeHierarchy[count].replace("l_","")
+def syntaxFix(jointSide, count):
+    if jointSide in completeHierarchy[count]:
+        attributeName = completeHierarchy[count].replace(jointSide,"")
         return attributeName
-    if "r_" in completeHierarchy[count]:
-        attributeName = completeHierarchy[count].replace("r_","")
-        return attributeName
-
 def showUI():
     global fingersCountField
     global fingersCheckBox
