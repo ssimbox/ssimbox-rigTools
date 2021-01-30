@@ -3,9 +3,6 @@ from ctrlUI_lib import createHandCtrl
 
 def duplicateHandChain(*args):
 
-    global fingersCountField
-    global fingersCheckBox
-    global axisMenu
     global completeHierarchy
 
     rootSel = cmds.ls(sl = True)[0]
@@ -20,8 +17,8 @@ def duplicateHandChain(*args):
 
     handJointCount = len(completeHierarchy)
 
-    fingerChainLength = cmds.intField(fingersCountField, q=1, v=1) #number of joints in a single finger
-    supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, v=0) 
+    fingerChainLength = cmds.intField(fingersCountField_UI, q=1, v=1) #number of joints in a single finger
+    supportJointCheckbox = cmds.checkBox(fingersCheckBox_UI, q=1, v=0) 
 
     newListName = ["_rig"]
     handLocatorsName = ["_LOC"]
@@ -197,10 +194,11 @@ def syntaxFix(jointSide, count):
     if jointSide in completeHierarchy[count]:
         attributeName = completeHierarchy[count].replace(jointSide,"")
         return attributeName
+
 def showUI():
-    global fingersCountField
-    global fingersCheckBox
-    global axisMenu
+    global fingersCountField_UI
+    global fingersCheckBox_UI
+    global axisMenu_UI
 
     # Close the previous window
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
@@ -210,13 +208,13 @@ def showUI():
 
     # Input field for finger length
     txtFingersChain = cmds.text("Joint per finger")
-    fingersCountField = cmds.intField(minValue=4, w = 20)
+    fingersCountField_UI = cmds.intField(minValue=4, w = 20)
     
     # Checkbox 
-    fingersCheckBox = cmds.checkBox(label = "Support joint?", value = False)
+    fingersCheckBox_UI = cmds.checkBox(label = "Support joint?", value = False)
 
     # create an optionMenu for fingers bending 
-    axisMenu = cmds.optionMenu("axisMenu", l = "Bending Axis") 
+    axisMenu_UI = cmds.optionMenu("axisMenu_UI", l = "Bending Axis") 
     cmds.menuItem(l="X")
     cmds.menuItem(l="Y")
     cmds.menuItem(l="Z")
@@ -232,21 +230,21 @@ def showUI():
     #formlayout test
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [(txtFingersChain, "top", 8), (txtFingersChain, "left", 5),
-                                  (fingersCountField, "top", 6), (fingersCountField, "right", 105), (fingersCountField, "left", 90),
-                                  (fingersCheckBox, "top", 8), (fingersCheckBox, "right", 40),
+                                  (fingersCountField_UI, "top", 6), (fingersCountField_UI, "right", 105), (fingersCountField_UI, "left", 90),
+                                  (fingersCheckBox_UI, "top", 8), (fingersCheckBox_UI, "right", 40),
                                   (separator01, "left", 5), (separator01, "right", 5), 
                                   (separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
-                                  (axisMenu, "left", 10),
+                                  (axisMenu_UI, "left", 10),
                                   #----------------------
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
 
-                    attachControl = [(fingersCheckBox, "left", 5, fingersCountField),
-                                     (separator01, "top", 5, fingersCountField),
-                                     (separator01, "top", 10, fingersCheckBox),
-                                     (axisMenu, "top", 5, separator01),
-                                     (separator02, "top", 5, axisMenu),
+                    attachControl = [(fingersCheckBox_UI, "left", 5, fingersCountField_UI),
+                                     (separator01, "top", 5, fingersCountField_UI),
+                                     (separator01, "top", 10, fingersCheckBox_UI),
+                                     (axisMenu_UI, "top", 5, separator01),
+                                     (separator02, "top", 5, axisMenu_UI),
                                     ])
 
     cmds.showWindow(myWin)
