@@ -1,5 +1,9 @@
 # IKFK Builder development
 
+30/01
+- Added clavicle support
+- Hierarchy ordered
+
 18/01
 - Opened repo to world
 
@@ -16,5 +20,9 @@
 - No execution if no checkbox selected
 
 # Auto Hand
+
+30/01
+- New hand builds. No more issue if less or more than five fingers. 
+
 15/01
 - Added controller creation
