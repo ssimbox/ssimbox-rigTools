@@ -3,10 +3,7 @@ from ctrlUI_lib import createHandCtrl
 
 def duplicateHandChain(*args):
 
-    global fingersCountField
-    global fingersCheckBox
-    global axisMenu
-
+    global completeHierarchy
 
     rootSel = cmds.ls(sl = True)[0]
     completeHierarchy = cmds.listRelatives(rootSel, ad = True)
@@ -20,8 +17,8 @@ def duplicateHandChain(*args):
 
     handJointCount = len(completeHierarchy)
 
-    fingerChainLength = cmds.intField(fingersCountField, q=1, v=1) #number of joints in a single finger
-    supportJointCheckbox = cmds.checkBox(fingersCheckBox, q=1, v=0) 
+    fingerChainLength = cmds.intField(fingersCountField_UI, q=1, v=1) #number of joints in a single finger
+    supportJointCheckbox = cmds.checkBox(fingersCheckBox_UI, q=1, v=0) 
 
     newListName = ["_rig"]
     handLocatorsName = ["_LOC"]
@@ -44,8 +41,7 @@ def duplicateHandChain(*args):
             cmds.matchTransform(handLocators, completeHierarchy[newLOC])
             cmds.makeIdentity(handLocators, a = 1, t = 0, r = 0, s = 0)
             cmds.setAttr(handLocators + ".scale", 0.1, 0.1, 0.1)
-
-
+    
     # Create group offsets for locators and parent it
     for x in range(handJointCount):
         anim_group = cmds.group(empty=True, name=completeHierarchy[x] + "_anim_grp")
@@ -86,28 +82,30 @@ def duplicateHandChain(*args):
     cmds.addAttr(attributeController, ln = "Fingers_Shorcuts", k = 1, r = 1, s = 1, at = "enum", en = "------")
     cmds.addAttr(attributeController, ln = "Fist", k = 1, r = 1, s = 1, at = "float")
     cmds.addAttr(attributeController, ln = "Spread", k = 1, r = 1, s = 1, at = "float")
-
-    cmds.addAttr(attributeController, ln=completeHierarchy[1], k=1, s=1, r=1, at="enum", enumName = "------" )
     
     hierarchyOrder += fingerChainLength
     # Hierarchy printed is in a top-down hierarchy so it's important parent all under hand
     for x in range(handJointCount):
+        
+        attributeName = syntaxFix(jointSide, x)
+        if x == 1: cmds.addAttr(attributeController, ln=attributeName, k=1, s=1, r=1, at="enum", enumName = "------" )
+        
         if x == hierarchyOrder:  #compares the index number to support_fingers joint 
             if supportJointCheckbox == 1:
-
+    
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[1] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[1] + "_LOC")
                 
-                cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
+                cmds.addAttr(attributeController, ln=attributeName, k=1, s=1, r=1, at="enum", enumName = "------" )
                 
                 hierarchyOrder += fingerChainLength
 
                 if hierarchyOrder == handJointCount:
                     cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                     cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
-  
+                    
             else:
-                cmds.addAttr(attributeController, ln=completeHierarchy[x], k=1, s=1, r=1, at="enum", enumName = "------" )
+                cmds.addAttr(attributeController, ln=attributeName, k=1, s=1, r=1, at="enum", enumName = "------" )
                 cmds.parent(completeHierarchy[x] + "_rig", completeHierarchy[0] + "_rig")
                 cmds.parent(completeHierarchy[x] + "_anim_grp", completeHierarchy[0] + "_anim_grp")
                 
@@ -126,6 +124,8 @@ def duplicateHandChain(*args):
         cmds.orientConstraint(completeHierarchy[x] + "_LOC", completeHierarchy[x] + "_rig")
         
         # Create attributes
+        
+        # Skip supportJoint attribute
         if supportJointCheckbox == 1:
             if x == 1:
                 continue
@@ -133,8 +133,8 @@ def duplicateHandChain(*args):
         for coord in xyz:
             if x == attributeCount:
                 continue
-            cmds.addAttr(attributeController, ln=completeHierarchy[x] + coord, k=1, s=1, r=1)
-            cmds.connectAttr(attributeController + "." + completeHierarchy[x] + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
+            cmds.addAttr(attributeController, ln=(attributeName + coord), k=1, s=1, r=1)
+            cmds.connectAttr(attributeController + "." + attributeName + coord, completeHierarchy[x] + "_LOC.rotate" + coord)
         
         if x == attributeCount:
             attributeCount += fingerChainLength
@@ -189,10 +189,16 @@ def duplicateHandChain(*args):
  
     cmds.select(attributeController)
 
+
+def syntaxFix(jointSide, count):
+    if jointSide in completeHierarchy[count]:
+        attributeName = completeHierarchy[count].replace(jointSide,"")
+        return attributeName
+
 def showUI():
-    global fingersCountField
-    global fingersCheckBox
-    global axisMenu
+    global fingersCountField_UI
+    global fingersCheckBox_UI
+    global axisMenu_UI
 
     # Close the previous window
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
@@ -202,20 +208,20 @@ def showUI():
 
     # Input field for finger length
     txtFingersChain = cmds.text("Joint per finger")
-    fingersCountField = cmds.intField(minValue=4, w = 20)
+    fingersCountField_UI = cmds.intField(minValue=4, w = 20)
     
     # Checkbox 
-    fingersCheckBox = cmds.checkBox(label = "Support joint?", value = False)
+    fingersCheckBox_UI = cmds.checkBox(label = "Support joint?", value = False)
 
     # create an optionMenu for fingers bending 
-    axisMenu = cmds.optionMenu("axisMenu", l = "Bending Axis") 
+    """axisMenu_UI = cmds.optionMenu("axisMenu_UI", l = "Bending Axis") 
     cmds.menuItem(l="X")
     cmds.menuItem(l="Y")
-    cmds.menuItem(l="Z")
+    cmds.menuItem(l="Z")"""
     
     # Separators
     separator01 = cmds.separator(h=5)
-    separator02 = cmds.separator(h=5)
+    #separator02 = cmds.separator(h=5)
     
     # Button to execute
     execButton = cmds.button(label="Duplicate hand chain", command=duplicateHandChain)
@@ -224,21 +230,21 @@ def showUI():
     #formlayout test
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [(txtFingersChain, "top", 8), (txtFingersChain, "left", 5),
-                                  (fingersCountField, "top", 6), (fingersCountField, "right", 105), (fingersCountField, "left", 90),
-                                  (fingersCheckBox, "top", 8), (fingersCheckBox, "right", 40),
+                                  (fingersCountField_UI, "top", 6), (fingersCountField_UI, "right", 105), (fingersCountField_UI, "left", 90),
+                                  (fingersCheckBox_UI, "top", 8), (fingersCheckBox_UI, "right", 40),
                                   (separator01, "left", 5), (separator01, "right", 5), 
-                                  (separator02, "left", 5), (separator02, "right", 5), 
+                                  #(separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
-                                  (axisMenu, "left", 10),
+                                  #(axisMenu_UI, "left", 10),
                                   #----------------------
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
 
-                    attachControl = [(fingersCheckBox, "left", 5, fingersCountField),
-                                     (separator01, "top", 5, fingersCountField),
-                                     (separator01, "top", 10, fingersCheckBox),
-                                     (axisMenu, "top", 5, separator01),
-                                     (separator02, "top", 5, axisMenu),
+                    attachControl = [(fingersCheckBox_UI, "left", 5, fingersCountField_UI),
+                                     (separator01, "top", 5, fingersCountField_UI),
+                                     (separator01, "top", 10, fingersCheckBox_UI),
+                                     #(axisMenu_UI, "top", 5, separator01),
+                                     #(separator02, "top", 5, axisMenu_UI),
                                     ])
 
     cmds.showWindow(myWin)
