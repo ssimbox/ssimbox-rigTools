@@ -214,14 +214,14 @@ def showUI():
     fingersCheckBox_UI = cmds.checkBox(label = "Support joint?", value = False)
 
     # create an optionMenu for fingers bending 
-    axisMenu_UI = cmds.optionMenu("axisMenu_UI", l = "Bending Axis") 
+    """axisMenu_UI = cmds.optionMenu("axisMenu_UI", l = "Bending Axis") 
     cmds.menuItem(l="X")
     cmds.menuItem(l="Y")
-    cmds.menuItem(l="Z")
+    cmds.menuItem(l="Z")"""
     
     # Separators
     separator01 = cmds.separator(h=5)
-    separator02 = cmds.separator(h=5)
+    #separator02 = cmds.separator(h=5)
     
     # Button to execute
     execButton = cmds.button(label="Duplicate hand chain", command=duplicateHandChain)
@@ -233,9 +233,9 @@ def showUI():
                                   (fingersCountField_UI, "top", 6), (fingersCountField_UI, "right", 105), (fingersCountField_UI, "left", 90),
                                   (fingersCheckBox_UI, "top", 8), (fingersCheckBox_UI, "right", 40),
                                   (separator01, "left", 5), (separator01, "right", 5), 
-                                  (separator02, "left", 5), (separator02, "right", 5), 
+                                  #(separator02, "left", 5), (separator02, "right", 5), 
                                   #---------------------
-                                  (axisMenu_UI, "left", 10),
+                                  #(axisMenu_UI, "left", 10),
                                   #----------------------
                                   (execButton, "bottom", 5), (execButton, "right", 5), (execButton, "left", 5),
                                   ],
@@ -243,8 +243,8 @@ def showUI():
                     attachControl = [(fingersCheckBox_UI, "left", 5, fingersCountField_UI),
                                      (separator01, "top", 5, fingersCountField_UI),
                                      (separator01, "top", 10, fingersCheckBox_UI),
-                                     (axisMenu_UI, "top", 5, separator01),
-                                     (separator02, "top", 5, axisMenu_UI),
+                                     #(axisMenu_UI, "top", 5, separator01),
+                                     #(separator02, "top", 5, axisMenu_UI),
                                     ])
 
     cmds.showWindow(myWin)
