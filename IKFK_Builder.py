@@ -176,13 +176,13 @@ def constraintFunc(scaleController, selectChain):
     for x in range(chainLen):
         
         # Setup orient constraints        
-        cmds.orientConstraint((ogChain[x] + "_ik"), ogChain[x])
-        cmds.orientConstraint((ogChain[x] + "_fk"), ogChain[x])
+        cmds.parentConstraint((ogChain[x] + "_ik"), ogChain[x])
+        cmds.parentConstraint((ogChain[x] + "_fk"), ogChain[x])
 
         # Setup SDK naming convention
         sdkDriver = switcherLoc[0] + ".FKIK_Mode"
-        ikSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_ikW0"
-        fkSdkDriven = ogChain[x] + "_orientConstraint1." + ogChain[x] + "_fkW1"
+        ikSdkDriven = ogChain[x] + "_parentConstraint1." + ogChain[x] + "_ikW0"
+        fkSdkDriven = ogChain[x] + "_parentConstraint1." + ogChain[x] + "_fkW1"
 
         # Setup SDK
         cmds.setAttr(sdkDriver, 0)
@@ -233,9 +233,9 @@ def fkControllerCreator(fkSize, legOrArm):
         cmds.setDrivenKeyframe(ogChain[0] + "_fk_anim_grp.visibility", cd=sdkDriver, v=0, dv=1)
 
         # Lock .t and .s attributes
-        for x in ["X", "Y", "Z"]:
-            cmds.setAttr(fk_controller + ".translate" + x, k=0, l=1)
-            cmds.setAttr(fk_controller + ".scale" + x, k=0, l=1)
+        #for x in ["X", "Y", "Z"]:
+            #cmds.setAttr(fk_controller + ".translate" + x, k=0, l=1)
+            #cmds.setAttr(fk_controller + ".scale" + x, k=0, l=1)
 
     # Create ordered hierarchy
     for x in reversed(range(chainLen)):
@@ -245,7 +245,7 @@ def fkControllerCreator(fkSize, legOrArm):
 
     # Set orientConstraint _anim controllers with _fk hierarchy
     for x in range(chainLen):
-        cmds.orientConstraint(ogChain[x] + "_fk_anim", ogChain[x] + "_fk")
+        cmds.parentConstraint(ogChain[x] + "_fk_anim", ogChain[x] + "_fk")
         # If leg chain is selected delete toe controller, else not
         if legOrArm == "Leg":
             if x == (chainLen-1):
