@@ -5,8 +5,8 @@ def duplicateHandChain(*args):
 
     global completeHierarchy
 
-    rootSel = cmds.ls(sl = True)[0]
-    completeHierarchy = cmds.listRelatives(rootSel, ad = True)
+    rootSel = cmds.ls(sl = True, type = "joint")[0]
+    completeHierarchy = cmds.listRelatives(rootSel, ad = True, type = "joint")
     completeHierarchy.append(rootSel)
     completeHierarchy.reverse()
     jointSide = rootSel[0:2]
@@ -198,7 +198,7 @@ def syntaxFix(jointSide, count):
 def showUI():
     global fingersCountField_UI
     global fingersCheckBox_UI
-    global axisMenu_UI
+    #global axisMenu_UI
 
     # Close the previous window
     if cmds.window("HandUI", ex = 1): cmds.deleteUI("HandUI")
@@ -208,7 +208,7 @@ def showUI():
 
     # Input field for finger length
     txtFingersChain = cmds.text("Joint per finger")
-    fingersCountField_UI = cmds.intField(minValue=4, w = 20)
+    fingersCountField_UI = cmds.intField(minValue=3, w = 20)
     
     # Checkbox 
     fingersCheckBox_UI = cmds.checkBox(label = "Support joint?", value = False)
