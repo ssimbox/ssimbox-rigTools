@@ -36,7 +36,7 @@ def duplicateChain(*args):
         chainLen = 3
 
     #suffix for the new chains
-    newJointList = ["_ik", "_fk"]
+    newJointList = ["_ik", "_fk", "_scale"]
     for newJoint in newJointList:
         for i in range(chainLen):
             
