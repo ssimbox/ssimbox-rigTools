@@ -17,13 +17,20 @@ def jointMaker(*args):
     for i in mainJoints:
         jnt = cmds.joint(n=i+'_game', rad=0.65)
         cmds.delete(cmds.parentConstraint(i, jnt, mo=0))
+        if "_bind" in jnt:
+            new = str(jnt).replace("_bind", "")
+            jnt = cmds.rename(jnt, new) 
+            cmds.select(cl=1)
+            print("jnt in if-->", jnt)
         gameJoints.append(jnt)
         cmds.select(d=1)
+
+        #if (str(gameJoints).endswith("_bind")):
+        #    cmds.rename(gameJoints, i + "_game")
 
     #Convert rotations of new joints to joint orient.
     for i in gameJoints:
         cmds.makeIdentity(i, apply = True, t=0, r=1, s=0, n=0)
-
 
     #Parent constraint from rig_jnts to game_jnts
 def makeConstraint(*args):
