@@ -1,5 +1,13 @@
-# sbx-autorig
+# ssimbox-rigTools
 Welcome to my repo, first in my life.
+
+Here I'm going to upload scripts I develop in my free time. I'm a character rigger and I found very useful write my own scripts. 
+
+Actually I developed two simple scripts
+* IKFK-Builder - Tool useful in building linear IKFK chain. I use it when I need to rig legs and arms
+* Autohand - Hand maker. Make constraints, controller and attributes on it. Save a lot of tedious work
+* Game Hierarchy Maker - I found necessary use a hiearchy to export in Unity so this tool helps you in make new joints and constraint rapidly 
+
 
 I'm currently working on controllers and relationships maker of my own rigs and I would like to share my entire work, free for all.
 Actually I developed a simple IKFK-builder for legs and arms and an auto hand maker (I really hate make fingers rigs, really tedious)
