@@ -285,6 +285,10 @@ def armIk(armIkScale, armikHandle, pvName):
                                     (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (0.5, 0.5, -0.5),
                                     (0.5, -0.5, -0.5), (0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, -0.5, -0.5)], 
                                     k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], n=side + "hand_ik_anim" )
+
+    # Rename shape node                 
+    shapeList = cmds.listRelatives(crvIkCube, s = True)
+    cmds.rename(shapeList, crvIkCube + "Shape")
     
     crvIkCubeGrp = cmds.group(n=crvIkCube + "_grp")
     cmds.delete(cmds.parentConstraint(ogChain[2] + "_ik", crvIkCubeGrp))
@@ -323,6 +327,11 @@ def legIK(ikFootScale, legikHandle, pvName):
     ikFootControl = cmds.curve(d=2, p=[(0.997, 0, 1.789), (0, 0, 2.39), (-0.997,0,1.789), (-1.108, 0, 0), (-0.784, 0,-2.5),
               (0, 0,-3), (0.784, 0, -2.5), (1.108, 0, 0), (0.997, 0, 1.789), (0, 0, 2.39)],
               k=[0,1,2,3,4,5,6,7,8,9,10], n=side + "leg_anim_ik")
+
+    # Rename shape node
+    shapeList = cmds.listRelatives(ikFootControl, s = True)
+    cmds.rename(shapeList, ikFootControl + "Shape")
+              
     ikFootControlGrp = cmds.group(em=1, n=ikFootControl + "_grp")
     cmds.parent(ikFootControl, ikFootControlGrp)
     

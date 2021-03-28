@@ -4,6 +4,11 @@ import maya.cmds as cmds
 # This is the controller library where I save curves' coordinates I make
 # One day I'll import curves from this file 
 
+# Rename shapes with
+def ShapeList(crvControl, name):
+    
+    shapeList = cmds.listRelatives(crvControl, s = True)
+    cmds.rename(shapeList, name + "Shape")
 
 # Cube form
 def createCube(nome):
@@ -40,6 +45,7 @@ def createSphere(nome):
                                             k= [0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 , 21 , 22 , 23 , 24 , 
                                             25 , 26 , 27 , 28 , 29 , 30 , 31 , 32 , 33 , 34 , 35 , 36 , 37 , 38 , 39 , 40 , 41 , 42 , 43 , 44 , 45 , 46 , 47 , 
                                             48 , 49 , 50 , 51 , 52])
+    ShapeList(crvSphere, nome)
     print ("end createSphere-->", crvSphere)
     return crvSphere
 
@@ -61,6 +67,7 @@ def createHandCtrl(nome):
                                             (0.0, 0.8318404710680585, 4.590263419858138)], 
                                             k=[0,1,2,3,4,5,6,7,8,9,10,11,12,13], n=nome)
     print ("end createHandCtrl --->", attributeController)
+    ShapeList(attributeController, nome)
     return attributeController
 
 
@@ -111,5 +118,7 @@ def createClav2(nome):
 (-1.637134, -1.345292, -4.65647),(-1.637134, -2.342727, -5.951649),(-1.637134, -3.564106, -7.038203),(-3.274268, -3.564106, -7.038203),
 (-4.911403, -3.564106, -7.038203), (-3.274268, -4.966615, -7.878044),(-1.637134, -6.501093, -8.441733),
 (0.0, -8.113749, -8.70951)], n=nome)
+
+    ShapeList(clavController, nome)
     
     return clavController
