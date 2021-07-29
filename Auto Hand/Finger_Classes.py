@@ -5,20 +5,34 @@ class Finger:
         self.metacarp = metacarp #Metacarp -> First bone in a finger
         self.distal = distal #Distal -> Last bone in a finger
         self.fullLength = fullLength #Entire chain
-
+        
     def jointColor(self, colorR, colorG, colorB):
         cmds.color(self.metacarp, rgb=(colorR, colorG, colorB))
 
     def ikHandles(self, nomone):
-        cmds.ikHandle(sj=self.metacarpDup, ee=self.distalDup, sol="ikSCsolver", n=nomone)
+        cmds.ikHandle(sj=self.metacarpDup, ee=self.distalDup, sol="ikRPsolver", n=nomone)
     
-    def duplFinger(self, metacarpDup, distalDup):
+    def duplFinger(self, metacarpDup, distalDup, hierarchyDup):
+
         self.metacarpDup = metacarpDup
         self.distalDup = distalDup
+        self.hierarchyDup = hierarchyDup
+
+        """devo ancora capire se tenere questo processo qui dentro oppure portarlo fuori, ancora non ne ho ben capito l'utilità
+        che poi sotto viene comunuque richiamato in maniera altamente barbara"""
+
+        for i in fullFinger:
+            asd = cmds.joint(n= i + rigJoint)
+            newJoint.append(asd)
+            cmds.matchTransform(asd, i)
+
+        cmds.parent(newJoint[0], w=1)
         pass
     
-    """potrei dichiarare le variabili di classe di duplFinger dentro __init__ e, nel metodo appena citato 
-        eseguo il processo con cui si creano i duplicati??? boh ci devo provare"""
+    # Connect Translate and Rotate attributes from duplicated hierarchy to the original
+    def connectToOrigin(self):
+        for x in range(len(self.fullLength)):
+            cmds.parentConstraint(self.hierarchyDup[x], self.fullLength[x])
 
     """
     def duplicateFingerChain(self, firstDup, endDup): 
@@ -53,24 +67,15 @@ fullFinger.reverse()
 # print("fullFinger --> ", fullFinger)
 
 # call Finger class
-# startJoint[0] = first joint selected and so first into the chain 
+# fullFinger[0] = first joint selected and so first into the chain 
 # fullFinger[-1] = it is the last joint in the chain
-firstFinger = Finger(fullFinger[0], fullFinger[-1], len(fullFinger))
+firstFinger = Finger(fullFinger[0], fullFinger[-1], fullFinger)
 
-# duplicate the finger base chain with a new one
-#firstFinger.duplicateFingerChain(startJoint[0] + "_rig")
-
-newJoint = []
-for i in fullFinger:
-    asd = cmds.joint(n=i+"__nuovo")
-    newJoint.append(asd)
-    cmds.matchTransform(asd, i)
-    #print(newJoint[i])
-print(newJoint)
-cmds.parent(newJoint[0], w=1)
 
 # richiamo il metodo della classe dichiarando chi è cosa
-dupFinger = firstFinger.duplFinger(newJoint[0], newJoint[-1])
+rigJoint = "__nuovo"
+newJoint = []
+dupFinger = firstFinger.duplFinger(fullFinger[0] + rigJoint, (fullFinger[-1] + rigJoint), newJoint)
 
 """
 rigChain = ["_rig"]
@@ -79,7 +84,7 @@ for y in rigChain:
         asd = cmds.joint(n=fullFinger[x] + y, rad=.7)
         cmds.matchTransform(fullFinger[x] + y, fullFinger[x])
 """
-
+firstFinger.connectToOrigin()
 # Create ikHandle
 firstFinger.ikHandles(startJoint + "_ikHandle")
 
