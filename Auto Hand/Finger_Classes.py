@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-class Finger:
+class Finger(object):
     def __init__(self, metacarp, distal, fullLength):
         self.metacarp = metacarp #Metacarp -> First bone in a finger
         self.distal = distal #Distal -> Last bone in a finger
@@ -9,8 +9,9 @@ class Finger:
     def jointColor(self, colorR, colorG, colorB):
         cmds.color(self.metacarp, rgb=(colorR, colorG, colorB))
 
-    def ikHandles(self, nomone):
-        cmds.ikHandle(sj=self.metacarpDup, ee=self.distalDup, sol="ikRPsolver", n=nomone)
+    def ikHandles(self):
+        fingerIKH = cmds.ikHandle(sj=self.metacarpDup, ee=self.distalDup, sol="ikSCsolver", n=self.metacarp + "_ikHandle")[0]
+        return fingerIKH
     
     def duplFinger(self, metacarpDup, distalDup, hierarchyDup):
 
@@ -22,7 +23,7 @@ class Finger:
         che poi sotto viene comunuque richiamato in maniera altamente barbara"""
 
         for i in fullFinger:
-            asd = cmds.joint(n= i + rigJoint)
+            rig = cmds.joint(n= i + rigJoint)
             newJoint.append(asd)
             cmds.matchTransform(asd, i)
 
@@ -54,19 +55,28 @@ class Finger:
         
         cmds.parent((firstDup[0] + "_rig"), world = True)
     """
-class Hand:
+
+class ControllerFinger(Finger):
+
+    def __init__(self, metacarp, distal, fullLength):
+        super(ControllerFinger, self).__init__(metacarp, distal, fullLength)
+
+    def makeController(self):
+        for x in range(len(self.fullLength)):
+            fingerLOCs = cmds.spaceLocator(n=self.fullLength[x] + "_LOC")
+            cmds.matchTransform(fingerLOCs, self.fullLength[x])
+
+"""class Hand:
     def __init__(self, carpal):
         self.carpal = carpal 
-        pass
+        pass"""
 
 
 startJoint = cmds.ls(sl=1)[0]
 fullFinger = cmds.listRelatives(startJoint, ad=1, typ="joint")
 fullFinger.append(startJoint)
 fullFinger.reverse()
-# print("fullFinger --> ", fullFinger)
 
-# call Finger class
 # fullFinger[0] = first joint selected and so first into the chain 
 # fullFinger[-1] = it is the last joint in the chain
 firstFinger = Finger(fullFinger[0], fullFinger[-1], fullFinger)
@@ -85,11 +95,20 @@ for y in rigChain:
         cmds.matchTransform(fullFinger[x] + y, fullFinger[x])
 """
 firstFinger.connectToOrigin()
+
 # Create ikHandle
-firstFinger.ikHandles(startJoint + "_ikHandle")
+asd = firstFinger.ikHandles()
+# Queste tre righe qua sotto sono la morte della programmazione
+asdGrp = cmds.group(n="ik_grp", em=1)
+cmds.parent(asd, "ik_grp")
+if cmds.objExists("ik_grp1"):
+    cmds.delete("ik_grp1")
 
 # Change color based on side
 if startJoint[0:2] == "l_":
     firstFinger.jointColor(0, 0, 255)
 elif startJoint[0:2] == "r_":
     firstFinger.jointColor(255, 0, 0)
+
+createCtrl = ControllerFinger(fullFinger[0], fullFinger[-1], fullFinger)
+createCtrl.makeController()
