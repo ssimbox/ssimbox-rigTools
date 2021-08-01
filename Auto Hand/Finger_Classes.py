@@ -5,7 +5,7 @@ class Finger(object):
         self.metacarp = metacarp #Metacarp -> First bone in a finger
         self.distal = distal #Distal -> Last bone in a finger
         self.fullLength = fullLength #Entire chain
-        
+
     def jointColor(self, colorR, colorG, colorB):
         cmds.color(self.metacarp, rgb=(colorR, colorG, colorB))
 
@@ -40,10 +40,20 @@ class ControllerFinger(Finger):
     def __init__(self, metacarp, distal, fullLength):
         super(ControllerFinger, self).__init__(metacarp, distal, fullLength)
 
+
     def makeController(self):
+        fingerController = []
         for x in range(len(self.fullLength)):
             fingerLOCs = cmds.spaceLocator(n=self.fullLength[x] + "_LOC")
+            fingerController.append(fingerLOCs)
             cmds.matchTransform(fingerLOCs, self.fullLength[x])
+            cmds.makeIdentity(fingerLOCs, r=0)
+            cmds.parentConstraint(fingerLOCs, fingerHierarchyDrv[x])
+
+        for x in range(len(fingerController[:-1])):
+            cmds.parent(fingerController[x+1], fingerController[x])
+
+
 
 
 ### Selection definition and the original chain hierarchy
@@ -56,7 +66,7 @@ fullFinger.reverse()
 # fullFinger[-1] = it is the last joint in the chain
 firstFinger = Finger(fullFinger[0], fullFinger[-1], fullFinger)
 
-fingerHierarchyDrv = []
+fingerHierarchyDrv = [] # List used into the DriverFinger class important in making the entire driver chain usable 
 
 driverFinger = DriverFinger(fullFinger[0], fullFinger[-1], fullFinger)
 driverFinger.duplicateChain(fullFinger[0] + "__nuovo", fullFinger[-1] + "__nuovo", fingerHierarchyDrv)
