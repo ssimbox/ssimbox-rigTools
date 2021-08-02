@@ -5,9 +5,6 @@ class Finger(object):
         self.metacarp = metacarp #Metacarp -> First bone in a finger
         self.distal = distal #Distal -> Last bone in a finger
         self.fullLength = fullLength #Entire chain
-        
-    def jointColor(self, colorR, colorG, colorB):
-        cmds.color(self.metacarp, rgb=(colorR, colorG, colorB))
 
 class DriverFinger(Finger):
     def __init__(self, metacarp, distal, fullLength):
@@ -27,34 +24,44 @@ class DriverFinger(Finger):
         cmds.parent(metacarpDrv, w=1) #Parent into world the driver chain
         cmds.select(cl=1) #Maya automatically selects the new chain but I don't want
     
-    def ikHandles(self):
-        fingerIKH = cmds.ikHandle(sj=self.ikStart, ee=self.ikEnd, sol="ikSCsolver", n=self.metacarp + "_ikHandle")[0]
-        return fingerIKH
-
     def connectToOrigin(self):
         for x in range(len(self.fullLength)):
             cmds.parentConstraint(self.hierarchyDrv[x], self.fullLength[x])
 
-    
     def ikChain(self):
-        self.ikStart = cmds.joint(n="_ikStart", rad=3)
-        self.ikEnd = cmds.joint(n="_ikEnd", rad=3)
+        self.ikStart = cmds.joint(n=self.metacarp + "_ikStart", rad=3)
+        self.ikEnd = cmds.joint(n=self.distal + "_ikEnd", rad=3)
 
         cmds.matchTransform(self.ikStart, self.metacarp)
         #cmds.makeIdentity(ikStart, self.metacarp)
         cmds.matchTransform(self.ikEnd, self.distal)
 
+    def ikHandles(self):
+        fingerIKH = cmds.ikHandle(sj=self.ikStart, ee=self.ikEnd, sol="ikSCsolver", n=self.metacarp + "_ikHandle")[0]
+        return fingerIKH
 
 class ControllerFinger(Finger):
 
     def __init__(self, metacarp, distal, fullLength):
         super(ControllerFinger, self).__init__(metacarp, distal, fullLength)
 
-    def makeController(self):
-        for x in range(len(self.fullLength)):
-            fingerLOCs = cmds.spaceLocator(n=self.fullLength[x] + "_LOC")
-            cmds.matchTransform(fingerLOCs, self.fullLength[x])
 
+    def makeController(self):
+        self.fingerLOCS = []
+        
+        for x in range(len(self.fullLength)):
+            boneLOC = cmds.spaceLocator(n=self.fullLength[x] + "_LOC")
+            self.fingerLOCS.append(boneLOC)
+            cmds.matchTransform(boneLOC, self.fullLength[x])
+        
+        for x in range(len(self.fullLength[:-1])):
+            #print(x)
+            cmds.parent(self.fingerLOCS[x+1], self.fingerLOCS[x])
+            pass
+
+    def jointColor(self, colorR, colorG, colorB):
+        for LOC in self.fingerLOCS:
+            cmds.color(LOC, rgb=(colorR, colorG, colorB))
 
 ### Selection definition and the original chain hierarchy
 startJoint = cmds.ls(sl=1)[0]
@@ -68,23 +75,23 @@ firstFinger = Finger(fullFinger[0], fullFinger[-1], fullFinger)
 
 driverFinger = DriverFinger(fullFinger[0], fullFinger[-1], fullFinger)
 driverFinger.duplicateChain(fullFinger[0] + "__nuovo", fullFinger[-1] + "__nuovo")
-driverFinger.ikChain()
 
 driverFinger.connectToOrigin()
 
 # Create ikHandle
-"""asd = firstFinger.ikHandles()
+ikChain = driverFinger.ikChain()
+finger_ikHandles = driverFinger.ikHandles()
 # Queste tre righe qua sotto sono la morte della programmazione
-asdGrp = cmds.group(n="ik_grp", em=1)
-cmds.parent(asd, "ik_grp")
-if cmds.objExists("ik_grp1"):
-    cmds.delete("ik_grp1")"""
-
-# Change color based on side
-if startJoint[0:2] == "l_":
-    firstFinger.jointColor(0, 0, 255)
-elif startJoint[0:2] == "r_":
-    firstFinger.jointColor(255, 0, 0)
+finger_ikHandles_grp = cmds.group(n="ik_grp", em=1)
+cmds.parent(finger_ikHandles, "ik_grp")
+if finger_ikHandles_grp == "ik_grp1":
+    cmds.delete(finger_ikHandles_grp)
 
 createCtrl = ControllerFinger(fullFinger[0], fullFinger[-1], fullFinger)
 createCtrl.makeController()
+
+# Change color based on side
+if startJoint[0:2] == "l_":
+    createCtrl.jointColor(0, 0, 255)
+elif startJoint[0:2] == "r_":
+    createCtrl.jointColor(255, 0, 0)
