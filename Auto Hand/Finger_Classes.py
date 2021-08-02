@@ -13,26 +13,36 @@ class DriverFinger(Finger):
     def __init__(self, metacarp, distal, fullLength):
         super(DriverFinger, self).__init__(metacarp, distal, fullLength)
 
-    def duplicateChain(self, metacarpDrv, distalDrv, hierarchyDrv):
+    def duplicateChain(self, metacarpDrv, distalDrv):
         
         self.metacarpDrv = metacarpDrv
         self.distalDrv = distalDrv
-        self.hierarchyDrv = hierarchyDrv
+        self.hierarchyDrv = []
 
         for x in range(len(self.fullLength)):
             boneDrv = cmds.joint(n=self.fullLength[x] + "__nuovo")
-            fingerHierarchyDrv.append(boneDrv) 
+            self.hierarchyDrv.append(boneDrv) 
             cmds.matchTransform(boneDrv, self.fullLength[x])
                
-        cmds.parent(metacarpDrv, w=1)
+        cmds.parent(metacarpDrv, w=1) #Parent into world the driver chain
+        cmds.select(cl=1) #Maya automatically selects the new chain but I don't want
     
     def ikHandles(self):
-        fingerIKH = cmds.ikHandle(sj=self.metacarpDrv, ee=self.distalDrv, sol="ikSCsolver", n=self.metacarp + "_ikHandle")[0]
+        fingerIKH = cmds.ikHandle(sj=self.ikStart, ee=self.ikEnd, sol="ikSCsolver", n=self.metacarp + "_ikHandle")[0]
         return fingerIKH
 
     def connectToOrigin(self):
         for x in range(len(self.fullLength)):
             cmds.parentConstraint(self.hierarchyDrv[x], self.fullLength[x])
+
+    
+    def ikChain(self):
+        self.ikStart = cmds.joint(n="_ikStart", rad=3)
+        self.ikEnd = cmds.joint(n="_ikEnd", rad=3)
+
+        cmds.matchTransform(self.ikStart, self.metacarp)
+        #cmds.makeIdentity(ikStart, self.metacarp)
+        cmds.matchTransform(self.ikEnd, self.distal)
 
 
 class ControllerFinger(Finger):
@@ -52,14 +62,13 @@ fullFinger = cmds.listRelatives(startJoint, ad=1, typ="joint")
 fullFinger.append(startJoint)
 fullFinger.reverse()
 
-# fullFinger[0] = first joint selected and so first into the chain 
-# fullFinger[-1] = it is the last joint in the chain
+# fullFinger[0] = first joint selected -> metacarp
+# fullFinger[-1] = last joint in the chain -> distal
 firstFinger = Finger(fullFinger[0], fullFinger[-1], fullFinger)
 
-fingerHierarchyDrv = []
-
 driverFinger = DriverFinger(fullFinger[0], fullFinger[-1], fullFinger)
-driverFinger.duplicateChain(fullFinger[0] + "__nuovo", fullFinger[-1] + "__nuovo", fingerHierarchyDrv)
+driverFinger.duplicateChain(fullFinger[0] + "__nuovo", fullFinger[-1] + "__nuovo")
+driverFinger.ikChain()
 
 driverFinger.connectToOrigin()
 
