@@ -1,23 +1,24 @@
 import maya.cmds as cmds
 
-class BaseFinger(object):
-    
-    def hierarchy_definition(self):
-        self.metacarp = cmds.ls(sl=1)[0]
-        self.hierarchy = cmds.listRelatives(self.metacarp, ad=1, typ="joint")
-        self.hierarchy.append(self.metacarp)
-        self.hierarchy.reverse()
+# Try to write classes as more generic as possible so you would re-use them in other scripts 
+#  
+class BaseChain(object):
 
-        return self.hierarchy
+    def __init__(self, hierarchy):
+        self.hierarchy = hierarchy
 
     def countBones(self):
-
         count = 0
         for x in self.hierarchy:
             count += 1
         return count
 
-class DriverFinger(BaseFinger):
+class DriverChain(BaseChain):
+
+    def __init__(self, hierarchy, hierarchyDrv):
+        super(DriverChain, self).__init__(hierarchy)
+        self.hierarchyDrv = hierarchyDrv
+
     # Directly connect driver chain with the base one
     def connect_to_baseFinger(self):
         for bone, boneDrv in zip(self.hierarchy, self.hierarchyDrv):
@@ -25,19 +26,21 @@ class DriverFinger(BaseFinger):
 
 def make_driver_chain(*args):
 
-    original_finger = BaseFinger()
-    original_hierarchy = original_finger.hierarchy_definition()
-
+    metacarp = cmds.ls(sl=1)[0]
+    hierarchy = cmds.listRelatives(metacarp, ad=1, typ="joint")
+    hierarchy.append(metacarp)
+    hierarchy.reverse()
+    
     driver_hierarchy = []
 
-    for bone in original_hierarchy:
+    for bone in hierarchy:
         boneDrv = cmds.joint(n=bone + "__rig")
         driver_hierarchy.append(boneDrv)
         cmds.matchTransform(boneDrv, bone)
 
     cmds.parent(driver_hierarchy[0], w=1)
 
-    driver_finger = DriverFinger()
+    driver_finger = DriverChain(hierarchy, driver_hierarchy)
     driver_to_origin_connection = driver_finger.connect_to_baseFinger()
 
 
@@ -54,5 +57,5 @@ def showUI():
 
 showUI()
 
-#ogFinger = BaseFinger()
+#ogFinger = BaseChain()
 #numBones = ogFinger.countBones()
