@@ -25,13 +25,20 @@ class DriverChain(BaseChain):
         for bone, boneDrv in zip(self.hierarchy, self.hierarchyDrv):
             cmds.parentConstraint(boneDrv, bone)
 
-# Chain definition
-metacarp = cmds.ls(sl=1)[0]
-hierarchy = cmds.listRelatives(metacarp, ad=1, typ="joint")
-hierarchy.append(metacarp)
-hierarchy.reverse()
+def chain_definition():
+    
+    # Chain definition
+    metacarp = cmds.ls(sl=1)[0]
+    hierarchy = cmds.listRelatives(metacarp, ad=1, typ="joint")
+    hierarchy.append(metacarp)
+    hierarchy.reverse()
+
+    return hierarchy
+
 
 def make_driver_chain(*args):
+
+    hierarchy = chain_definition()
 
     # Istantiating BaseChain and printing number of joint in every single chain
     original_chain = BaseChain(hierarchy)
@@ -53,6 +60,8 @@ def make_driver_chain(*args):
 
 def make_ik_chain(*args):
 
+    hierarchy = chain_definition()
+
     ikStart = cmds.joint(n=hierarchy[0] + "_ikStart", rad=3)
     ikEnd = cmds.joint(n=hierarchy[-1] + "_ikEnd", rad=3)
 
@@ -62,6 +71,14 @@ def make_ik_chain(*args):
     cmds.matchTransform(ikEnd, hierarchy[-1])
 
     finger_ikHandle = cmds.ikHandle(sj=ikStart, ee=ikEnd, sol="ikSCsolver", n=hierarchy[0] + "_ikHandle")[0]
+    
+    print("pointing this ikHandle --> {}".format(finger_ikHandle))
+
+    iks_group = cmds.group(n="ik_grp", em=1)
+    
+    if iks_group == "ik_grp" and cmds.objExists(iks_group):
+        cmds.parent(finger_ikHandle, "ik_grp")
+    
 
 # User Interface
 def showUI():
