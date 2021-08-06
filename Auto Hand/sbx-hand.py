@@ -14,6 +14,11 @@ class BaseChain(object):
         print("Joints in this chain --> {}".format(count))
         return count
 
+    def joint_side(self):
+        left_or_right = self.hierarchy[0][0:2]
+        print("This chain is on the --> {}".format(left_or_right))
+        return left_or_right
+
 class DriverChain(BaseChain):
 
     def __init__(self, hierarchy, hierarchyDrv):
@@ -24,6 +29,10 @@ class DriverChain(BaseChain):
     def connect_to_baseFinger(self):
         for bone, boneDrv in zip(self.hierarchy, self.hierarchyDrv):
             cmds.parentConstraint(boneDrv, bone)
+
+class Locators():
+    def __init__(self):
+        pass
 
 def chain_definition():
     
@@ -62,23 +71,21 @@ def make_ik_chain(*args):
 
     hierarchy = chain_definition()
 
+    # Creating a two-joint chain where gonna apply "reverse-hand" ik-handles
     ikStart = cmds.joint(n=hierarchy[0] + "_ikStart", rad=3)
     ikEnd = cmds.joint(n=hierarchy[-1] + "_ikEnd", rad=3)
 
+    # Parent this chain to the world using the original chain attributes
     cmds.parent(ikStart, w=1)
-
     cmds.matchTransform(ikStart, hierarchy[0])
     cmds.matchTransform(ikEnd, hierarchy[-1])
 
+    # single chain ik handle build and parenting in a single grp
     finger_ikHandle = cmds.ikHandle(sj=ikStart, ee=ikEnd, sol="ikSCsolver", n=hierarchy[0] + "_ikHandle")[0]
-    
-    print("pointing this ikHandle --> {}".format(finger_ikHandle))
+    cmds.parent(finger_ikHandle, ik_hand_grp)
 
-    iks_group = cmds.group(n="ik_grp", em=1)
-    
-    if iks_group == "ik_grp" and cmds.objExists(iks_group):
-        cmds.parent(finger_ikHandle, "ik_grp")
-    
+# group automatically generating at the startup where parent fingers ik_handles
+ik_hand_grp = cmds.group(n= "fingers_ik", em=1, w=1)
 
 # User Interface
 def showUI():
