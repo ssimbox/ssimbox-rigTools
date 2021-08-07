@@ -30,7 +30,6 @@ class DriverChain(BaseChain):
 
     def add(self, bone):
         self.hierarchyDrv.append(bone)
-        return self.hierarchyDrv
 
     # Directly connect driver chain with the base one
     def connect_to_baseFinger(self):
@@ -46,21 +45,8 @@ class Locators(DriverChain):
         super(DriverChain, self).__init__(hierarchy, hierarchyDrv)
         pass
 
-"""def chain_definition():
-    
-    # Chain definition
-    metacarp = cmds.ls(sl=1)[0]
-    hierarchy = cmds.listRelatives(metacarp, ad=1, typ="joint")
-    hierarchy.append(metacarp)
-    hierarchy.reverse()
-
-    return hierarchy
-"""
-
 def make_driver_chain(*args):
 
-    #hierarchy = chain_definition()
-    
     # Istantiating BaseChain and printing number of joint in every single chain
     original_chain = BaseChain()
     original_chain.bone_count()
@@ -76,7 +62,7 @@ def make_driver_chain(*args):
 
     # Intantiating DriverChain and parentConstraint every driver joint with the relative original 
     driver_finger.connect_to_baseFinger()
-
+    cmds.select(original_chain.metacarp)
 
 def make_ik_chain(*args):
 
@@ -95,13 +81,13 @@ def make_ik_chain(*args):
     # single chain ik handle build and parenting in a single grp
     finger_ikHandle = cmds.ikHandle(sj=ikStart, ee=ikEnd, sol="ikSCsolver", n=original_chain.hierarchy[0] + "_ikHandle")[0]
     cmds.parent(finger_ikHandle, ik_hand_grp)
+    #cmds.select(driver_ch.hierarchyDrv)
 
 # group automatically generating at the startup where parent fingers ik_handles
 ik_hand_grp = cmds.group(n= "fingers_ik", em=1, w=1)
 
 
 def make_locators_attributes(*args):
-    
     
     original_chain = BaseChain()
     driver_finger = DriverChain()
@@ -111,34 +97,20 @@ def make_locators_attributes(*args):
     print(original_chain.hierarchy)
     print(driver_finger.hierarchyDrv)
 
-    for bone in driver_finger.hierarchy:
+    for bone in original_chain.hierarchy:
         boneLOC = cmds.spaceLocator(n=bone + "_LOC")
         fingerLOCS.append(boneLOC)
         cmds.matchTransform(boneLOC, bone)
         cmds.orientConstraint(boneLOC, bone)
 
-    """
-    hierarchy = chain_definition()
-    hierarchyDrv = make_driver_chain()
-    print(hierarchyDrv)
-
-    fingerLOCS = []
-
-    for bone in hierarchy:
-        boneLOC = cmds.spaceLocator(n=bone + "_LOC")
-        fingerLOCS.append(boneLOC)
-        cmds.matchTransform(boneLOC, bone)
-        cmds.orientConstraint(boneLOC, hierarchyDrv)
-
-    for x in range(len(hierarchy[:-1])):
+    for x in range(len(original_chain.hierarchy[:-1])):
             cmds.parent(fingerLOCS[x+1], fingerLOCS[x])
-            """
+
 # User Interface
 def showUI():
 
     if cmds.window("switchModeUI", ex = 1): 
         cmds.deleteUI("switchModeUI")
-        cmds.delete(ik_hand_grp)
     myWin = cmds.window("switchModeUI", t="sbx-autohand", w=300, h=300, s=1)
     mainLayout = cmds.formLayout(nd=50)
 
