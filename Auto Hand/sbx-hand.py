@@ -30,8 +30,9 @@ class DriverChain(BaseChain):
         for bone, boneDrv in zip(self.hierarchy, self.hierarchyDrv):
             cmds.parentConstraint(boneDrv, bone)
 
-class Locators():
-    def __init__(self):
+class Locators(DriverChain):
+    def __init__(self, hierarchy, hierarchyDrv):
+        super(DriverChain, self).__init__(hierarchy, hierarchyDrv)
         pass
 
 def chain_definition():
@@ -48,7 +49,7 @@ def chain_definition():
 def make_driver_chain(*args):
 
     hierarchy = chain_definition()
-
+    
     # Istantiating BaseChain and printing number of joint in every single chain
     original_chain = BaseChain(hierarchy)
     original_chain.bone_count()
@@ -66,6 +67,8 @@ def make_driver_chain(*args):
     # Intantiating DriverChain and parentConstraint every driver joint with the relative original 
     driver_finger = DriverChain(hierarchy, driver_hierarchy)
     driver_finger.connect_to_baseFinger()
+
+    return driver_hierarchy
 
 def make_ik_chain(*args):
 
@@ -87,6 +90,24 @@ def make_ik_chain(*args):
 # group automatically generating at the startup where parent fingers ik_handles
 ik_hand_grp = cmds.group(n= "fingers_ik", em=1, w=1)
 
+
+def make_locators_attributes(*args):
+    
+    hierarchy = chain_definition()
+    hierarchyDrv = make_driver_chain()
+    print(hierarchyDrv)
+
+    fingerLOCS = []
+
+    for bone in hierarchy:
+        boneLOC = cmds.spaceLocator(n=bone + "_LOC")
+        fingerLOCS.append(boneLOC)
+        cmds.matchTransform(boneLOC, bone)
+        cmds.orientConstraint(boneLOC, hierarchyDrv)
+
+    for x in range(len(hierarchy[:-1])):
+            cmds.parent(fingerLOCS[x+1], fingerLOCS[x])
+
 # User Interface
 def showUI():
 
@@ -95,18 +116,24 @@ def showUI():
     mainLayout = cmds.formLayout(nd=50)
 
     separator01 = cmds.separator(h=5)
+    separator02 = cmds.separator(h=5)
     driver_chain_Button = cmds.button(l="make driver chain", c=make_driver_chain)
     ik_chain_Button = cmds.button(l="make ik chain", c=make_ik_chain)
+    locators_Button = cmds.button(l="create locators", c=make_locators_attributes)
 
     cmds.formLayout(mainLayout, e=1,
                     attachForm = [
                         (driver_chain_Button, "left", 8), (driver_chain_Button, "top", 5), (driver_chain_Button, "right", 8),
                         (separator01, "left", 1), (separator01, "right", 2),
-                        (ik_chain_Button, "left", 8), (ik_chain_Button, "top", 5), (ik_chain_Button, "right", 8)
+                        (separator02, "left", 1), (separator02, "right", 2),
+                        (ik_chain_Button, "left", 8), (ik_chain_Button, "top", 5), (ik_chain_Button, "right", 8),
+                        (locators_Button, "left", 8), (locators_Button, "top", 5), (locators_Button, "right", 8)
                         ],
                     attachControl = [
                         (separator01, "top", 5, driver_chain_Button),
-                        (ik_chain_Button, "top", 5, separator01)
+                        (ik_chain_Button, "top", 5, separator01),
+                        (separator02, "top", 5, ik_chain_Button),
+                        (locators_Button, "top", 5, separator02),
                         ],
                     #attachPosition = [(driver_chain_Button, "right", 0, 0)
                         #]
