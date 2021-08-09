@@ -34,16 +34,20 @@ class DriverChain(BaseChain):
     # Directly connect driver chain with the base one
     def connect_to_baseFinger(self):
         
-        print("hierarchy --> {}".format(self.hierarchy))
-        print("hierarchyDrv --> {}".format(self.hierarchyDrv))
+        #print("hierarchy --> {}".format(self.hierarchy))
+        #print("hierarchyDrv --> {}".format(self.hierarchyDrv))
         
         for bone, boneDrv in zip(self.hierarchy, self.hierarchyDrv):
             cmds.parentConstraint(boneDrv, bone)
 
-class Locators(DriverChain):
-    def __init__(self, hierarchy, hierarchyDrv):
-        super(DriverChain, self).__init__(hierarchy, hierarchyDrv)
-        pass
+class Locators():
+    def __init__(self, locatorList):
+        self.locatorList = locatorList
+
+    def change_color(self, colorR, colorG, colorB):
+        for loc in self.locatorList:
+            cmds.color(loc, rgb=(colorR, colorG, colorB)) #yellow
+    pass
 
 def make_driver_chain(*args):
 
@@ -51,8 +55,10 @@ def make_driver_chain(*args):
     original_chain = BaseChain()
     original_chain.bone_count()
 
+    # Istantiating DriverChain and use its method .add 
     driver_finger = DriverChain()
 
+    # Generating driver joint chain
     for bone in original_chain.hierarchy:
         boneDrv = cmds.joint(n=bone + "__rig")
         driver_finger.add(boneDrv)
@@ -78,7 +84,7 @@ def make_ik_chain(*args):
     cmds.matchTransform(ikStart, original_chain.hierarchy[0])
     cmds.matchTransform(ikEnd, original_chain.hierarchy[-1])
 
-    # single chain ik handle build and parenting in a single grp
+    # Single chain ik handle build and parenting in a single grp
     finger_ikHandle = cmds.ikHandle(sj=ikStart, ee=ikEnd, sol="ikSCsolver", n=original_chain.hierarchy[0] + "_ikHandle")[0]
     cmds.parent(finger_ikHandle, ik_hand_grp)
     #cmds.select(driver_ch.hierarchyDrv)
@@ -94,17 +100,22 @@ def make_locators_attributes(*args):
 
     fingerLOCS = []
 
-    print(original_chain.hierarchy)
-    print(driver_finger.hierarchyDrv)
+    loc_color = Locators(fingerLOCS)
+
+    #print("original chain --> {}".format(original_chain.hierarchy))
+    #print("driver finger access to hierarchy --> {}".format(driver_finger.hierarchy))
 
     for bone in original_chain.hierarchy:
         boneLOC = cmds.spaceLocator(n=bone + "_LOC")
         fingerLOCS.append(boneLOC)
         cmds.matchTransform(boneLOC, bone)
         cmds.orientConstraint(boneLOC, bone)
+        
+    loc_color.change_color(255, 255, 0)
 
     for x in range(len(original_chain.hierarchy[:-1])):
             cmds.parent(fingerLOCS[x+1], fingerLOCS[x])
+
 
 # User Interface
 def showUI():
