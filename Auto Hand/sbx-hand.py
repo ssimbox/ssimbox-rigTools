@@ -40,14 +40,23 @@ class DriverChain(BaseChain):
         for bone, boneDrv in zip(self.hierarchy, self.hierarchyDrv):
             cmds.parentConstraint(boneDrv, bone)
 
-class Locators():
+class Locator_Attributes():
     def __init__(self, locatorList):
         self.locatorList = locatorList
 
     def change_color(self, colorR, colorG, colorB):
         for loc in self.locatorList:
             cmds.color(loc, rgb=(colorR, colorG, colorB)) #yellow
-    pass
+    
+    def create_attibutes_on_controller(self, attributeController):
+        count = 0
+        
+        for locator in self.locatorList:
+            print(locator)
+            count += 1
+            cmds.addAttr(attributeController, ln="ciaoooo" + str(count), k=1, s=1, r=1, at="enum", enumName = "------" )
+            cmds.setAttr(attributeController + ".ciaoooo" + str(count), l=1)
+        pass
 
 def make_driver_chain(*args):
 
@@ -100,7 +109,7 @@ def make_locators_attributes(*args):
 
     fingerLOCS = []
 
-    loc_color = Locators(fingerLOCS)
+    locator_chain = Locator_Attributes(fingerLOCS)
 
     #print("original chain --> {}".format(original_chain.hierarchy))
     #print("driver finger access to hierarchy --> {}".format(driver_finger.hierarchy))
@@ -111,11 +120,14 @@ def make_locators_attributes(*args):
         cmds.matchTransform(boneLOC, bone)
         cmds.orientConstraint(boneLOC, bone)
         
-    loc_color.change_color(255, 255, 0)
+    locator_chain.change_color(255, 255, 0)
 
+    # Parent the last locator with its predecessor creating correct hierarchy  
     for x in range(len(original_chain.hierarchy[:-1])):
             cmds.parent(fingerLOCS[x+1], fingerLOCS[x])
 
+    attributeCircle = cmds.circle()[0]
+    locator_chain.create_attibutes_on_controller(attributeCircle)
 
 # User Interface
 def showUI():
